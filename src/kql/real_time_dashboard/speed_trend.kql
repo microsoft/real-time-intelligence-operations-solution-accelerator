@@ -1,0 +1,39 @@
+// =========================
+// Tile: Speed Trend Over Time (30 Days)
+// Purpose: Show average speed trend in time bins for the last 30 days
+// Refresh cadence: Every 30 seconds
+// =========================
+
+// -------------------------
+// 1) Configuration & Parameters (same naming as previous query)
+// -------------------------
+let BaselineWindow        = 30d;        // Lookback period for trend analysis
+let BinSize               = 1h;         // Time bin size for aggregation
+let AssetFilterParam      = tostring(['AssetFilter']); // Optional asset filter
+
+// -------------------------
+// 2) Asset mapping (Id -> Name)
+// -------------------------
+let assetMapping =
+    assets
+    | project AssetId = Id, AssetName = Name;
+
+// -------------------------
+// 3) Trend calculation
+//    Aggregate average speed per asset in hourly bins
+// -------------------------
+events
+| join kind=inner (assetMapping) on AssetId
+| where Timestamp >= _startTime and Timestamp <= _endTime
+| where isempty(AssetFilterParam) or AssetName == AssetFilterParam
+| summarize avgSpeed = round(avg(Speed), 2) by AssetName, timeBin = bin(Timestamp, BinSize)
+// -------------------------
+// 4) Presentation: timechart
+// -------------------------
+| order by timeBin asc
+| render timechart
+       with (
+        title  = "📈 Speed Trend Over Time (Last 30 Days)",
+        xtitle = "Time",
+        ytitle = "Average Speed (RPM)"
+       )

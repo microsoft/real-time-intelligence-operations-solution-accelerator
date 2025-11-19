@@ -1,0 +1,27 @@
+// UTILITY: Production Efficiency Analysis (Simplified)
+// PURPOSE: Analyze production throughput, efficiency metrics, and operational patterns
+// USAGE: Optimize production scheduling and identify bottlenecks
+
+// Production Efficiency Analysis by Asset and Shift
+events
+| extend 
+    Shift = case(
+        hourofday(Timestamp) >= 6 and hourofday(Timestamp) < 14, "Day_Shift",
+        hourofday(Timestamp) >= 14 and hourofday(Timestamp) < 22, "Evening_Shift", 
+        "Night_Shift"
+    )
+| summarize 
+    TotalProduction = count(),
+    AvgSpeed = round(avg(Speed), 1),
+    AvgTemp = round(avg(Temperature), 1),
+    EfficiencyScore = round(avg(Speed) / 120 * 100, 1),
+    QualityScore = round((1 - avg(DefectProbability)) * 100, 1)
+by AssetId, Shift
+| extend OverallEfficiency = round((EfficiencyScore + QualityScore) / 2, 1)
+| extend ProductionGrade = case(
+    OverallEfficiency >= 85, "A - Excellent",
+    OverallEfficiency >= 75, "B - Good", 
+    OverallEfficiency >= 65, "C - Average",
+    "D - Needs Improvement"
+)
+| order by OverallEfficiency desc

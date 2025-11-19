@@ -1,0 +1,21 @@
+// Baseline Statistics: Asset performance analysis
+// PURPOSE: Calculate statistics for Speed, Temperature, and DefectProbability by Asset
+// USAGE: Compare baseline performance between Asset A_1000 and A_1001
+
+events
+| summarize 
+    EventCount = count(),
+    SpeedMean = round(avg(Speed), 2),
+    SpeedStdev = round(stdev(Speed), 2),
+    SpeedMin = round(min(Speed), 1),
+    SpeedMax = round(max(Speed), 1),
+    TempMean = round(avg(Temperature), 2),
+    TempStdev = round(stdev(Temperature), 2),
+    TempMin = round(min(Temperature), 1),
+    TempMax = round(max(Temperature), 1),
+    DefectMean = round(avg(DefectProbability), 4),
+    DefectStdev = round(stdev(DefectProbability), 4),
+    DefectMin = round(min(DefectProbability), 4),
+    DefectMax = round(max(DefectProbability), 4)
+by AssetId
+| order by AssetId

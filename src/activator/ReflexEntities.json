@@ -1,0 +1,53 @@
+[
+  {
+    "uniqueIdentifier": "ebbb8b86-09f6-4f08-8ac1-4ead8c8208d3",
+    "payload": {
+      "name": "EventStream",
+      "metadata": {
+        "eventstreamArtifactId": "57e98c69-3a9c-4f63-a47a-54c7775da942"
+      }
+    },
+    "type": "eventstreamSource-v1"
+  },
+  {
+    "uniqueIdentifier": "19d396a5-92eb-4662-a04d-238fc548a8bc",
+    "payload": {
+      "name": "Real-Time Intelligence for Operations events",
+      "definition": {
+        "type": "Event",
+        "instance": "{\"templateId\":\"SourceEvent\",\"templateVersion\":\"1.1\",\"steps\":[{\"name\":\"SourceEventStep\",\"id\":\"956892a4-af6e-4905-bad9-ff7fe6d05d1e\",\"rows\":[{\"name\":\"SourceSelector\",\"kind\":\"SourceReference\",\"arguments\":[{\"name\":\"entityId\",\"type\":\"string\",\"value\":\"ebbb8b86-09f6-4f08-8ac1-4ead8c8208d3\"}]}]}]}"
+      }
+    },
+    "type": "timeSeriesView-v1"
+  },
+  {
+    "uniqueIdentifier": "a8258dee-554d-4e8e-9497-b0936f4c5a54",
+    "payload": {
+      "name": "High speed email alert",
+      "definition": {
+        "type": "Rule",
+        "instance": "{\"steps\":[{\"id\":\"d8e978a1-5a38-4667-b40d-e76aaa269ccd\",\"name\":\"FieldsDefaultsStep\",\"rows\":[{\"arguments\":[{\"arguments\":[{\"name\":\"entityId\",\"type\":\"string\",\"value\":\"19d396a5-92eb-4662-a04d-238fc548a8bc\"}],\"kind\":\"EventReference\",\"name\":\"event\",\"type\":\"complex\"}],\"kind\":\"Event\",\"name\":\"EventSelector\"}]},{\"id\":\"34bcbd5d-e71a-4d64-8892-c56c1d0d2978\",\"name\":\"EventDetectStep\",\"rows\":[{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventField\",\"name\":\"EventFieldSelector\"},{\"arguments\":[{\"name\":\"op\",\"type\":\"string\",\"value\":\"IsGreaterThan\"},{\"name\":\"threshold\",\"type\":\"number\",\"value\":85}],\"kind\":\"NumberValueCondition\",\"name\":\"NumberValueCondition\"}]},{\"id\":\"c4e46de3-8594-419e-ac44-8ece07fa02f9\",\"name\":\"ActStep\",\"rows\":[{\"arguments\":[{\"name\":\"messageLocale\",\"type\":\"string\",\"value\":\"en-us\"},{\"name\":\"sentTo\",\"type\":\"array\",\"values\":[{\"type\":\"string\",\"value\":\"gazho@MngEnvMCAP993385.onmicrosoft.com\"}]},{\"name\":\"copyTo\",\"type\":\"array\",\"values\":[]},{\"name\":\"bCCTo\",\"type\":\"array\",\"values\":[]},{\"name\":\"subject\",\"type\":\"array\",\"values\":[{\"name\":\"string\",\"type\":\"string\",\"value\":\"Asset \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"AssetId\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" Speed \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" is too high (>85)\"}]},{\"name\":\"headline\",\"type\":\"array\",\"values\":[{\"name\":\"string\",\"type\":\"string\",\"value\":\"Asset \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"AssetId\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" \\n Speed \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" \\n is too high (>85)\"}]},{\"name\":\"optionalMessage\",\"type\":\"array\",\"values\":[{\"name\":\"string\",\"type\":\"string\",\"value\":\"Asset \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"AssetId\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" Speed \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" is too high. Normal range is 35-85. \\n\"}]},{\"name\":\"additionalInformation\",\"type\":\"array\",\"values\":[{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"AssetId\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"AssetId\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"},{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"Vibration\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Vibration\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"},{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"Temperature\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Temperature\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"},{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"Speed\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"},{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"Humidity\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Humidity\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"}]}],\"kind\":\"EmailMessage\",\"name\":\"EmailBinding\"}]}],\"templateId\":\"EventTrigger\",\"templateVersion\":\"1.2.3\"}",
+        "settings": {
+          "shouldRun": false,
+          "shouldApplyRuleOnUpdate": true
+        }
+      }
+    },
+    "type": "timeSeriesView-v1"
+  },
+  {
+    "uniqueIdentifier": "20cd5613-58ce-4b23-b95e-f9aaf9b1813b",
+    "payload": {
+      "name": "Low speed email alert",
+      "definition": {
+        "type": "Rule",
+        "instance": "{\"steps\":[{\"id\":\"24e6e6e6-f5d8-4c96-a0b7-4b5471fb9092\",\"name\":\"FieldsDefaultsStep\",\"rows\":[{\"arguments\":[{\"arguments\":[{\"name\":\"entityId\",\"type\":\"string\",\"value\":\"19d396a5-92eb-4662-a04d-238fc548a8bc\"}],\"kind\":\"EventReference\",\"name\":\"event\",\"type\":\"complex\"}],\"kind\":\"Event\",\"name\":\"EventSelector\"}]},{\"id\":\"46a51c0d-7fa2-400f-8420-f3806f7eb5e7\",\"name\":\"EventDetectStep\",\"rows\":[{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventField\",\"name\":\"EventFieldSelector\"},{\"arguments\":[{\"name\":\"op\",\"type\":\"string\",\"value\":\"IsLessThan\"},{\"name\":\"threshold\",\"type\":\"number\",\"value\":35}],\"kind\":\"NumberValueCondition\",\"name\":\"NumberValueCondition\"}]},{\"id\":\"b76af64a-4d73-44c7-9abb-ab2089a95d20\",\"name\":\"ActStep\",\"rows\":[{\"arguments\":[{\"name\":\"messageLocale\",\"type\":\"string\",\"value\":\"en-us\"},{\"name\":\"sentTo\",\"type\":\"array\",\"values\":[{\"type\":\"string\",\"value\":\"gazho@MngEnvMCAP993385.onmicrosoft.com\"}]},{\"name\":\"copyTo\",\"type\":\"array\",\"values\":[]},{\"name\":\"bCCTo\",\"type\":\"array\",\"values\":[]},{\"name\":\"subject\",\"type\":\"array\",\"values\":[{\"name\":\"string\",\"type\":\"string\",\"value\":\"Asset \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"AssetId\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" Speed \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" is too low (<35) \"}]},{\"name\":\"headline\",\"type\":\"array\",\"values\":[{\"name\":\"string\",\"type\":\"string\",\"value\":\"Speed \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" is too low\"}]},{\"name\":\"optionalMessage\",\"type\":\"array\",\"values\":[{\"name\":\"string\",\"type\":\"string\",\"value\":\"Asset \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"AssetId\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" \\n\\nSpeed: \"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventFieldReference\",\"type\":\"complex\"},{\"name\":\"string\",\"type\":\"string\",\"value\":\" is too low. \\n\\nNormal speed is 35-85.\"}]},{\"name\":\"additionalInformation\",\"type\":\"array\",\"values\":[{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"AssetId\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"AssetId\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"},{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"Temperature\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Temperature\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"},{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"Speed\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"Speed\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"},{\"arguments\":[{\"name\":\"name\",\"type\":\"string\",\"value\":\"DefectProbability\"},{\"arguments\":[{\"name\":\"fieldName\",\"type\":\"string\",\"value\":\"DefectProbability\"}],\"kind\":\"EventFieldReference\",\"name\":\"reference\",\"type\":\"complexReference\"}],\"kind\":\"NameReferencePair\",\"type\":\"complex\"}]}],\"kind\":\"EmailMessage\",\"name\":\"EmailBinding\"}]}],\"templateId\":\"EventTrigger\",\"templateVersion\":\"1.2.3\"}",
+        "settings": {
+          "shouldRun": false,
+          "shouldApplyRuleOnUpdate": true
+        }
+      }
+    },
+    "type": "timeSeriesView-v1"
+  }
+]

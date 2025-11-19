@@ -1,0 +1,39 @@
+// UTILITY: Business Value Analysis
+// PURPOSE: Focus on financial impact, cost analysis, and business ROI metrics
+// USAGE: Understand the business value and cost implications of manufacturing performance
+
+// Cost Impact Analysis - What defects cost the business
+events
+| extend 
+    QualityLevel = case(
+        DefectProbability <= 0.03, "Premium",
+        DefectProbability <= 0.07, "Standard", 
+        DefectProbability <= 0.12, "Budget",
+        "Rework_Required"
+    ),
+    EstimatedUnitValue = case(
+        DefectProbability <= 0.03, 125.0,  // Premium products
+        DefectProbability <= 0.07, 100.0,  // Standard products
+        DefectProbability <= 0.12, 75.0,   // Budget products  
+        25.0  // Rework required
+    ),
+    ProductionCost = 45.0,  // Estimated cost per unit
+    WasteOrRework = case(DefectProbability > 0.12, 1, 0)
+| summarize 
+    TotalUnits = count(),
+    TotalRevenue = round(sum(EstimatedUnitValue), 0),
+    TotalCosts = round(sum(ProductionCost), 0),
+    GrossProfit = round(sum(EstimatedUnitValue) - sum(ProductionCost), 0),
+    ProfitMargin = round((sum(EstimatedUnitValue) - sum(ProductionCost)) / sum(EstimatedUnitValue) * 100, 1),
+    WasteUnits = sum(WasteOrRework),
+    WasteCost = round(sum(WasteOrRework) * 45.0, 0),
+    PremiumUnits = countif(QualityLevel == "Premium"),
+    StandardUnits = countif(QualityLevel == "Standard"),
+    BudgetUnits = countif(QualityLevel == "Budget"),
+    ReworkUnits = countif(QualityLevel == "Rework_Required")
+by AssetId
+| extend 
+    RevenuePerUnit = round(TotalRevenue / TotalUnits, 2),
+    WastePercentage = round(WasteUnits * 100.0 / TotalUnits, 1),
+    PremiumPercentage = round(PremiumUnits * 100.0 / TotalUnits, 1)
+| order by GrossProfit desc

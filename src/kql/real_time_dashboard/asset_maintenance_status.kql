@@ -1,0 +1,54 @@
+// =========================
+// tile: asset maintenance & health status
+// purpose: add maintenance awareness to real-time monitoring
+// =========================
+
+// Get asset information with maintenance status
+let assetInfo = assets
+| join kind= leftouter  (sites) on $left.SiteId == $right.Id
+| project 
+    AssetId = Id, 
+    AssetName = Name, 
+    AssetType = Type,
+    SiteName = Name1,
+    MaintenanceStatus;
+
+// -------------------------
+// 3) get latest performance data for context
+// -------------------------
+let latestPerformance = events
+| where Timestamp >= _startTime and Timestamp <= _endTime
+| summarize 
+    LatestReading = arg_max(Timestamp, *) by AssetId
+| project AssetId, Speed, Temperature, Vibration, DefectProbability,LatestReading;
+
+// Combine maintenance status with real-time performance
+assetInfo
+| join kind=leftouter(latestPerformance) on AssetId
+| where isempty(['AssetFilter']) or AssetName == ['AssetFilter']
+| extend 
+    // Create maintenance status indicator
+    StatusIcon = case(
+        MaintenanceStatus == "Done", "✅",
+        MaintenanceStatus == "Scheduled", "🔧",
+        MaintenanceStatus == "Overdue", "🚨",
+        MaintenanceStatus == "In Progress", "⚡",
+        "❓"
+    ),
+    // Create maintenance urgency
+    MaintenanceUrgency = case(
+       MaintenanceStatus == "Overdue", "🚨 URGENT",
+        MaintenanceStatus == "Scheduled" and (Temperature > 35 or Vibration > 0.5), "🟡 SOON", 
+        MaintenanceStatus == "Scheduled", "🔧 MAINTENANCE PLANNED",
+        MaintenanceStatus == "Done", "✅ HEALTHY",
+        "❓ CHECK"
+    )
+| project 
+    ["Asset"] = AssetName,
+    ["Site"] = SiteName,
+    ["Maintenance Status"] = strcat(MaintenanceStatus),
+    ["Last Update"] = iff(isnull(LatestReading), "No Recent Data", format_datetime(LatestReading, "HH:mm"))
+| render table
+    with (
+        title="🔧 Asset Maintenance & Health Status"
+    )

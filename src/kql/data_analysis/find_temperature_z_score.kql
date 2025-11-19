@@ -1,0 +1,60 @@
+//Z-score based threshold analysis for Temperature using ±2 standard deviations
+//Z-score = ±2 for 95% confidence interval (approximately 2 standard deviations)
+
+let analysisEndTime = now() - 1d;  // Exclude last 24 hours
+let analysisStartTime = analysisEndTime - 30d;  // 30 days of historical data
+let zScoreThreshold = 2.0;  // 2 standard deviations for threshold detection
+//
+events
+| where Timestamp >= analysisStartTime and Timestamp <= analysisEndTime
+| where isnotnull(Temperature)
+| summarize 
+    // Basic statistics
+    MinTemperature = min(Temperature),
+    MaxTemperature = max(Temperature),
+    AvgTemperature = avg(Temperature),
+    StdDevTemperature = stdev(Temperature),
+    MedianTemperature = percentile(Temperature, 50),
+    TotalEvents = count(),
+    // Z-score based thresholds (±2 standard deviations)
+    LowerThreshold_ZScore2 = avg(Temperature) - (zScoreThreshold * stdev(Temperature)),
+    UpperThreshold_ZScore2 = avg(Temperature) + (zScoreThreshold * stdev(Temperature)),
+    // Additional percentile reference points for comparison
+    P5Temperature = percentile(Temperature, 5),
+    P95Temperature = percentile(Temperature, 95)
+| extend
+    // Calculate threshold range and analysis info
+    ThresholdRange = UpperThreshold_ZScore2 - LowerThreshold_ZScore2,
+    AnalysisPeriod = strcat("30 days ending ", format_datetime(analysisEndTime, 'yyyy-MM-dd HH:mm')),
+    ZScoreUsed = zScoreThreshold,
+    // Calculate how many standard deviations the min/max values are from mean
+    MinValue_ZScore = (MinTemperature - AvgTemperature) / StdDevTemperature,
+    MaxValue_ZScore = (MaxTemperature - AvgTemperature) / StdDevTemperature,
+    // Calculate coefficient of variation (CV) for temperature stability assessment
+    CoefficientOfVariation = (StdDevTemperature / AvgTemperature) * 100.0,
+    // Temperature range analysis
+    TemperatureRange = MaxTemperature - MinTemperature
+| project 
+    Metric = "Temperature Z-Score Analysis (±2σ)",
+    AnalysisPeriod,
+    TotalEvents,
+    ZScoreUsed,
+    // Core statistics
+    AvgTemperature = round(AvgTemperature, 1),
+    StdDevTemperature = round(StdDevTemperature, 2),
+    CoefficientOfVariation_Percent = round(CoefficientOfVariation, 2),
+    TemperatureRange = round(TemperatureRange, 1),
+    // Z-score thresholds for Activator rules (PRIMARY OUTPUT)
+    LowerThreshold_ZScore2 = round(LowerThreshold_ZScore2, 1),
+    UpperThreshold_ZScore2 = round(UpperThreshold_ZScore2, 1),
+    ThresholdRange = round(ThresholdRange, 1),
+    // Reference data for comparison
+    MinTemperature = round(MinTemperature, 1),
+    MaxTemperature = round(MaxTemperature, 1),
+    MedianTemperature = round(MedianTemperature, 1),
+    P5Temperature = round(P5Temperature, 1),
+    P95Temperature = round(P95Temperature, 1),
+    // Z-score analysis of actual min/max values
+    MinValue_ZScore = round(MinValue_ZScore, 2),
+    MaxValue_ZScore = round(MaxValue_ZScore, 2)
+

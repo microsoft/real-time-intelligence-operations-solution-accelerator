@@ -1,0 +1,35 @@
+//Raw data range for setting activator rules 
+
+events
+| summarize 
+    MinDefectProbability = min(DefectProbability),
+    MaxDefectProbability = max(DefectProbability),
+    AvgDefectProbability = avg(DefectProbability),
+    MedianDefectProbability = percentile(DefectProbability, 50),
+    P90DefectProbability = percentile(DefectProbability, 90),
+    P95DefectProbability = percentile(DefectProbability, 95),
+    P97DefectProbability = percentile(DefectProbability, 97),
+    P99DefectProbability = percentile(DefectProbability, 99),
+    P99_5DefectProbability = percentile(DefectProbability, 99.5),
+    P10DefectProbability = percentile(DefectProbability, 10),
+    P8DefectProbability = percentile(DefectProbability, 8),
+    P5DefectProbability = percentile(DefectProbability, 5),
+    TotalEvents = count(),
+    NonZeroEvents = countif(DefectProbability > 0)
+| project 
+    Metric = "DefectProbability Analysis",
+    MinDefectProbability = round(MinDefectProbability, 6),
+    MaxDefectProbability = round(MaxDefectProbability, 6), 
+    AvgDefectProbability = round(AvgDefectProbability, 6),
+    MedianDefectProbability = round(MedianDefectProbability, 6),
+    P99_5DefectProbability = round(P99_5DefectProbability, 6),
+    P99DefectProbability = round(P99DefectProbability, 6),
+    P97DefectProbability = round(P97DefectProbability, 6),
+    P95DefectProbability = round(P95DefectProbability, 6),
+    P90DefectProbability = round(P90DefectProbability, 6),
+    P10DefectProbability = round(P10DefectProbability, 6),
+    P8DefectProbability = round(P8DefectProbability, 6),
+    P5DefectProbability = round(P5DefectProbability, 6),
+    TotalEvents,
+    NonZeroEvents
+

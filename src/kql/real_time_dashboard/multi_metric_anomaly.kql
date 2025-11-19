@@ -1,0 +1,50 @@
+// TILE NAME: Multi-Metric Anomaly Timeline
+// TILE DESCRIPTION: Timeline visualization showing when anomalies occurred across all sensor metrics with 5-minute time bins
+// 
+// Tile 2: Multi-Metric Anomaly Timeline
+// Purpose: Timeline showing when anomalies occurred across all sensor metrics  
+// Refresh: Every 30 seconds
+
+let baselineWindow = ago(30d); // Use 30 days for statistical baseline with sample data
+
+// Calculate baseline for Z-score detection
+let sensorBaseline = events
+| where Timestamp >= baselineWindow and Timestamp <= ago(24h) // Exclude last 24h for stable baseline
+| where AssetFilter == "Both Assets" or AssetId == AssetFilter
+| summarize 
+    SpeedMean = avg(Speed), SpeedStdev = stdev(Speed),
+    TempMean = avg(Temperature), TempStdev = stdev(Temperature),
+    VibrationMean = avg(Vibration), VibrationStdev = stdev(Vibration)
+    by AssetId;
+
+// Detect anomalies over time
+events  
+| where Timestamp >= _startTime and Timestamp <= _endTime
+| where AssetFilter == "Both Assets" or AssetId == AssetFilter
+| join kind=inner (sensorBaseline) on AssetId
+| extend 
+    SpeedZScore = abs(Speed - SpeedMean) / SpeedStdev,
+    TempZScore = abs(Temperature - TempMean) / TempStdev,
+    VibrationZScore = abs(Vibration - VibrationMean) / VibrationStdev
+| extend
+    SpeedAnomaly = SpeedZScore > 2.0,
+    TempAnomaly = TempZScore > 2.0, 
+    VibrationAnomaly = VibrationZScore > 2.0,
+    QualityAnomaly = DefectProbability > 0.05
+| summarize 
+    SpeedAnomalyCount = countif(SpeedAnomaly),
+    TempAnomalyCount = countif(TempAnomaly),
+    VibrationAnomalyCount = countif(VibrationAnomaly),
+    QualityAnomalyCount = countif(QualityAnomaly),
+    TotalAnomalies = countif(SpeedAnomaly or TempAnomaly or VibrationAnomaly or QualityAnomaly),
+    EventCount = count()
+    by AssetId, TimeWindow = bin(Timestamp, 1h) // Use 1-hour bins to reduce data points
+| where DisplayMode == "Show All" or TotalAnomalies > 0
+| extend AnomalyRate = round(TotalAnomalies * 100.0 / EventCount, 1)
+| order by TimeWindow asc
+| render timechart
+    with (
+        title="📈 Multi-Metric Anomaly Timeline (1-hour windows)",
+        xtitle="Time", 
+        ytitle="Anomaly Count per Window"
+    )

@@ -1,0 +1,43 @@
+// UTILITY: RTI Dashboard Data Health Check (Simplified)
+// PURPOSE: Quick validation of data availability and quality for troubleshooting
+// USAGE: Run this when dashboard tiles show unexpected results
+
+// Asset Health Status and Data Freshness Check
+events
+| where Timestamp >= ago(7d)
+| summarize 
+    Events = count(),
+    LastSeen = max(Timestamp),
+    FirstSeen = min(Timestamp),
+    AvgSpeed = round(avg(Speed), 1),
+    AvgTemp = round(avg(Temperature), 1),
+    AvgVibration = round(avg(Vibration), 3),
+    AvgDefectRate = round(avg(DefectProbability) * 100, 1)
+by AssetId
+| extend 
+    DataGapHours = datetime_diff('hour', now(), LastSeen),
+    DataSpanDays = datetime_diff('day', LastSeen, FirstSeen)
+| extend
+    DataStatus = case(
+        DataGapHours < 1, "Current",
+        DataGapHours < 24, "Recent", 
+        "Stale"
+    ),
+    HealthStatus = case(
+        Events > 100, "Healthy",
+        Events > 10, "Limited",
+        "Sparse"
+    )
+| project 
+    AssetId,
+    HealthStatus,
+    DataStatus,
+    Events,
+    DataSpanDays,
+    DataGapHours,
+    LastSeen,
+    AvgSpeed,
+    AvgTemp,
+    AvgVibration,
+    AvgDefectRate
+| order by AssetId

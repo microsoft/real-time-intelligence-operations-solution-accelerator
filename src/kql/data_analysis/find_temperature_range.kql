@@ -1,0 +1,15 @@
+//Raw data range for setting activator rules 
+
+events
+| summarize 
+    MinTemperature = min(Temperature),
+    MaxTemperature = max(Temperature),
+    AvgTemperature = avg(Temperature),
+    MedianTemperature = percentile(Temperature, 50),
+    P95Temperature = percentile(Temperature, 95),
+    P5Temperature = percentile(Temperature, 5),
+    TotalEvents = count()
+| project 
+    Metric = "Temperature Analysis",
+    MinTemperature, MaxTemperature, AvgTemperature, MedianTemperature, P95Temperature, P5Temperature, TotalEvents
+

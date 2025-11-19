@@ -1,0 +1,62 @@
+//Z-score based threshold analysis for Vibration using ±2 standard deviations
+//Z-score = ±2 for 95% confidence interval (approximately 2 standard deviations)
+
+let analysisEndTime = now() - 1d;  // Exclude last 24 hours
+let analysisStartTime = analysisEndTime - 30d;  // 30 days of historical data
+let zScoreThreshold = 2.0;  // 2 standard deviations for threshold detection
+//
+events
+| where Timestamp >= analysisStartTime and Timestamp <= analysisEndTime
+| where isnotnull(Vibration)
+| summarize 
+    // Basic statistics
+    MinVibration = min(Vibration),
+    MaxVibration = max(Vibration),
+    AvgVibration = avg(Vibration),
+    StdDevVibration = stdev(Vibration),
+    MedianVibration = percentile(Vibration, 50),
+    TotalEvents = count(),
+    // Z-score based thresholds (±2 standard deviations)
+    LowerThreshold_ZScore2 = avg(Vibration) - (zScoreThreshold * stdev(Vibration)),
+    UpperThreshold_ZScore2 = avg(Vibration) + (zScoreThreshold * stdev(Vibration)),
+    // Additional percentile reference points for comparison
+    P5Vibration = percentile(Vibration, 5),
+    P95Vibration = percentile(Vibration, 95)
+| extend
+    // Calculate threshold range and analysis info
+    ThresholdRange = UpperThreshold_ZScore2 - LowerThreshold_ZScore2,
+    AnalysisPeriod = strcat("30 days ending ", format_datetime(analysisEndTime, 'yyyy-MM-dd HH:mm')),
+    ZScoreUsed = zScoreThreshold,
+    // Calculate how many standard deviations the min/max values are from mean
+    MinValue_ZScore = (MinVibration - AvgVibration) / StdDevVibration,
+    MaxValue_ZScore = (MaxVibration - AvgVibration) / StdDevVibration,
+    // Calculate coefficient of variation (CV) for vibration stability assessment
+    CoefficientOfVariation = (StdDevVibration / AvgVibration) * 100.0,
+    // Vibration range analysis
+    VibrationRange = MaxVibration - MinVibration,
+    // Practical lower threshold (since negative vibration doesn't make physical sense)
+    PracticalLowerThreshold = case(LowerThreshold_ZScore2 < 0, 0.0, LowerThreshold_ZScore2)
+| project 
+    Metric = "Vibration Z-Score Analysis (±2σ)",
+    AnalysisPeriod,
+    TotalEvents,
+    ZScoreUsed,
+    // Core statistics
+    AvgVibration = round(AvgVibration, 3),
+    StdDevVibration = round(StdDevVibration, 4),
+    CoefficientOfVariation_Percent = round(CoefficientOfVariation, 2),
+    VibrationRange = round(VibrationRange, 3),
+    // Z-score thresholds for Activator rules (PRIMARY OUTPUT)
+    PracticalLowerThreshold = round(PracticalLowerThreshold, 3),
+    UpperThreshold_ZScore2 = round(UpperThreshold_ZScore2, 3),
+    ThresholdRange = round(ThresholdRange, 3),
+    // Reference data for comparison
+    MinVibration = round(MinVibration, 3),
+    MaxVibration = round(MaxVibration, 3),
+    MedianVibration = round(MedianVibration, 3),
+    P5Vibration = round(P5Vibration, 3),
+    P95Vibration = round(P95Vibration, 3),
+    // Z-score analysis of actual min/max values
+    MinValue_ZScore = round(MinValue_ZScore, 2),
+    MaxValue_ZScore = round(MaxValue_ZScore, 2)
+

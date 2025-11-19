@@ -1,0 +1,63 @@
+
+// =========================
+// tile: daily anomaly rate
+// purpose: show anomaly rate percentage per asset over time
+// refresh cadence: every 30 seconds
+// =========================
+
+// -------------------------
+// 1) configuration & parameters
+// -------------------------
+let baselinewindow = ago(30d); // use 30 days for statistical baseline
+let assetfilterparam = tostring(['AssetFilter']); // optional asset filter
+let redzthreshold = 2.0;       // z-score threshold for anomaly detection
+let binsize = 1d;              // time bin for anomaly rate calculation
+
+// -------------------------
+// 2) asset mapping (id -> name)
+// -------------------------
+let assetmapping =
+    assets
+    | project AssetId = Id, assetname = Name;
+
+// -------------------------
+// 3) calculate baseline statistics (exclude last 24h for stability)
+// -------------------------
+let sensorbaseline =
+    events
+    | join kind=inner (assetmapping) on AssetId
+    | where Timestamp >= baselinewindow and Timestamp <= ago(24h)
+    | where isempty(assetfilterparam) or assetname == assetfilterparam
+    | summarize
+        speedmean = avg(Speed), speedstdev = stdev(Speed),
+        tempmean = avg(Temperature), tempstdev = stdev(Temperature),
+        vibrationmean = avg(Vibration), vibrationstdev = stdev(Vibration)
+      by AssetId;
+
+// -------------------------
+// 4) detect anomalies with z-score logic
+// -------------------------
+events
+| join kind=inner (assetmapping) on AssetId
+| where Timestamp >= _startTime and Timestamp <= _endTime
+| where isempty(assetfilterparam) or assetname == assetfilterparam
+| join kind=inner (sensorbaseline) on AssetId
+| extend
+    speedzscore = iff(isnotnull(speedstdev) and speedstdev > 0, todecimal(abs(Speed - speedmean) / speedstdev), todecimal(0)),
+    tempzscore = iff(isnotnull(tempstdev) and tempstdev > 0, todecimal(abs(Temperature - tempmean) / tempstdev), todecimal(0)),
+    vibrationzscore = iff(isnotnull(vibrationstdev) and vibrationstdev > 0, todecimal(abs(Vibration - vibrationmean) / vibrationstdev), todecimal(0))
+|extend 
+    speedanomaly = speedzscore > redzthreshold,
+    tempanomaly = tempzscore > redzthreshold,
+    vibrationanomaly = vibrationzscore > redzthreshold,
+    qualityanomaly = DefectProbability > 0.05
+| summarize
+    speedanomalycount = countif(speedanomaly),
+    tempanomalycount = countif(tempanomaly),
+    vibrationanomalycount = countif(vibrationanomaly),
+    qualityanomalycount = countif(qualityanomaly),
+    totalanomalies = countif(speedanomaly or tempanomaly or vibrationanomaly or qualityanomaly),
+    eventcount = count()
+    by AssetId, assetname, timewindow = bin(Timestamp, binsize)
+| extend anomalyrate = round(totalanomalies * 100.0 / eventcount, 1)
+| project timewindow, anomalyrate, assetname| project timewindow, anomalyrate, assetname

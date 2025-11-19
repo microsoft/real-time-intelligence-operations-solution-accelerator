@@ -1,0 +1,15 @@
+//Raw data range for setting activator rules 
+
+events
+| summarize 
+    MinHumidity = min(Humidity),
+    MaxHumidity = max(Humidity),
+    AvgHumidity = avg(Humidity),
+    MedianHumidity = percentile(Humidity, 50),
+    P95Humidity = percentile(Humidity, 95),
+    P5Humidity = percentile(Humidity, 5),
+    TotalEvents = count()
+| project 
+    Metric = "Humidity Analysis",
+    MinHumidity, MaxHumidity, AvgHumidity, MedianHumidity, P95Humidity, P5Humidity, TotalEvents
+

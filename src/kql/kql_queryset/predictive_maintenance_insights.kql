@@ -1,0 +1,32 @@
+// UTILITY: Predictive Maintenance Insights (Simplified)
+// PURPOSE: Identify maintenance needs and predict potential equipment failures
+// USAGE: Schedule preventive maintenance and reduce unplanned downtime
+
+// Asset Health Analysis - Current State Assessment
+events
+| summarize 
+    EventCount = count(),
+    AvgSpeed = round(avg(Speed), 1),
+    MaxTemp = round(max(Temperature), 1),
+    AvgTemp = round(avg(Temperature), 1),
+    AvgDefectRate = round(avg(DefectProbability) * 100, 2),
+    SpeedVariability = round(stdev(Speed), 1),
+    TempVariability = round(stdev(Temperature), 1),
+    CriticalEvents = countif(Temperature > 35 or Speed < 40 or DefectProbability > 0.10),
+    RecentActivity = max(Timestamp)
+by AssetId
+| extend 
+    HealthScore = case(
+        AvgSpeed >= 50 and MaxTemp <= 30 and AvgDefectRate <= 5, 100,
+        AvgSpeed >= 40 and MaxTemp <= 35 and AvgDefectRate <= 8, 80,
+        AvgSpeed >= 30 and MaxTemp <= 40 and AvgDefectRate <= 12, 60,
+        40
+    ),
+    MaintenancePriority = case(
+        MaxTemp > 35 and AvgSpeed < 40, "🔴 Critical - Immediate",
+        MaxTemp > 32 or AvgSpeed < 45 or AvgDefectRate > 8, "🟠 High - This Week",
+        SpeedVariability > 15 or TempVariability > 3, "🟡 Medium - Monitor",
+        "🟢 Good - Routine"
+    ),
+    RiskLevel = round(CriticalEvents * 100.0 / EventCount, 1)
+| order by HealthScore asc

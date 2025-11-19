@@ -1,0 +1,15 @@
+//Raw data range for setting activator rules 
+
+events
+| summarize 
+    MinVibration = min(Vibration),
+    MaxVibration = max(Vibration),
+    AvgVibration = avg(Vibration),
+    MedianVibration = percentile(Vibration, 50),
+    P95Vibration = percentile(Vibration, 95),
+    P5Vibration = percentile(Vibration, 5),
+    TotalEvents = count()
+| project 
+    Metric = "Vibration Analysis",
+    MinVibration, MaxVibration, AvgVibration, MedianVibration, P95Vibration, P5Vibration, TotalEvents
+

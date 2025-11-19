@@ -1,0 +1,90 @@
+// =============================================================================
+// SHIFT ANOMALY ANALYSIS
+// =============================================================================
+// PURPOSE: Compare anomaly rates across work shifts (Day/Evening/Night)
+// VISUAL: Table with shift performance comparison
+// BUSINESS VALUE: Identify training needs and shift-specific operational issues
+
+// Shift Definitions:
+// Day Shift (6AM-2PM): Primary production hours
+// Evening Shift (2PM-10PM): Secondary production 
+// Night Shift (10PM-6AM): Maintenance window with reduced staff
+
+let baselineWindow = ago(30d);
+
+// Calculate statistical baseline for anomaly detection
+let sensorBaseline = events
+| where Timestamp >= baselineWindow and Timestamp <= ago(24h)
+| summarize 
+    SpeedMean = avg(Speed), SpeedStdev = stdev(Speed),
+    TempMean = avg(Temperature), TempStdev = stdev(Temperature),  
+    VibrationMean = avg(Vibration), VibrationStdev = stdev(Vibration)
+    by AssetId;
+
+// Get asset names for display
+let assetMapping = assets
+| project AssetId = Id, AssetName = Name;
+
+// Main analysis: Shift-based anomaly detection
+events
+| join kind=inner (assetMapping) on AssetId
+| where Timestamp >= _startTime and Timestamp <= _endTime
+| where isempty(['AssetFilter']) or AssetName == ['AssetFilter']
+| join kind=inner (sensorBaseline) on AssetId
+| join kind=inner (assetMapping) on AssetId
+| extend Hour = datetime_part("hour", Timestamp)
+| extend
+    Shift = case(
+        Hour >= 6 and Hour < 14, "Day Shift",
+        Hour >= 14 and Hour < 22, "Evening Shift", 
+        "Night Shift"
+    ),
+    ShiftOrder = case(
+        Hour >= 6 and Hour < 14, 1,
+        Hour >= 14 and Hour < 22, 2,
+        3
+    ),
+    // Anomaly detection using Z-score > 2.0
+    SpeedAnomaly = iff(SpeedStdev > 0, abs(Speed - SpeedMean) / SpeedStdev > 2.0, false),
+    TempAnomaly = iff(TempStdev > 0, abs(Temperature - TempMean) / TempStdev > 2.0, false),
+    VibrationAnomaly = iff(VibrationStdev > 0, abs(Vibration - VibrationMean) / VibrationStdev > 2.0, false),
+    QualityAnomaly = DefectProbability > 0.05,
+    HasAnyAnomaly = (SpeedStdev > 0 and abs(Speed - SpeedMean) / SpeedStdev > 2.0) or 
+                    (TempStdev > 0 and abs(Temperature - TempMean) / TempStdev > 2.0) or 
+                    (VibrationStdev > 0 and abs(Vibration - VibrationMean) / VibrationStdev > 2.0) or 
+                    (DefectProbability > 0.05)
+| summarize 
+    TotalEvents = count(),
+    AnomalyEvents = countif(HasAnyAnomaly),
+    SpeedIssues = countif(SpeedAnomaly),
+    TempIssues = countif(TempAnomaly), 
+    VibrationIssues = countif(VibrationAnomaly),
+    QualityIssues = countif(QualityAnomaly),
+    AvgSpeed = round(avg(Speed), 1),
+    AvgTemp = round(avg(Temperature), 1),
+    AvgVibration = round(avg(Vibration), 3),
+    AvgDefectRate = round(avg(DefectProbability) * 100, 1)
+    by Shift
+| extend 
+    AnomalyRate = round(AnomalyEvents * 100.0 / TotalEvents, 1),
+    SpeedIssueRate = round(SpeedIssues * 100.0 / TotalEvents, 1),
+    TempIssueRate = round(TempIssues * 100.0 / TotalEvents, 1),
+    VibrationIssueRate = round(VibrationIssues * 100.0 / TotalEvents, 1),
+    QualityIssueRate = round(QualityIssues * 100.0 / TotalEvents, 1) 
+|extend AnomalyRate,SpeedIssueRate,TempIssueRate,VibrationIssueRate,QualityIssueRate,Performance = case(
+        AnomalyRate > 15, "🔴 Needs Attention",
+        AnomalyRate > 8, "🟡 Monitor", 
+        "🟢 Good"
+    )
+| project 
+    ["Shift"] = Shift,
+    //["Asset"] = AssetName,
+    ["Status"] = Performance,
+    ["Anomaly Rate %"] = AnomalyRate,
+    ["Events"] = TotalEvents
+
+| order by Shift asc 
+| render table
+    with (
+        title="� Shift Performance Analysis - Operations by Time Period"
+    )

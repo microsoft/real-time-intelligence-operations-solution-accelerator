@@ -1,0 +1,100 @@
+
+// =========================
+// tile: anomaly correlation matrix
+// purpose: show which metrics tend to have anomalies together
+// refresh cadence: every 30 seconds
+// =========================
+
+// -------------------------
+// 1) configuration & parameters
+// -------------------------
+let baselinewindow = ago(30d); // use 30 days for statistical baseline
+let assetfilterparam = tostring(['AssetFilter']); // optional asset filter
+let redzthreshold = 2.0; // z-score threshold for anomaly detection
+
+// -------------------------
+// 2) asset mapping (id -> name)
+// -------------------------
+let assetmapping =
+    assets
+    | project AssetId = Id, assetname = Name;
+
+// -------------------------
+// 3) calculate baseline statistics (exclude last 24h for stability)
+// -------------------------
+let sensorbaseline =
+    events
+    | join kind=inner (assetmapping) on AssetId
+    | where Timestamp >= baselinewindow and Timestamp <= ago(24h)
+    | where isempty(assetfilterparam) or assetname == assetfilterparam
+    | summarize
+        speedmean = avg(Speed), speedstdev = stdev(Speed),
+        tempmean = avg(Temperature), tempstdev = stdev(Temperature),
+        vibrationmean = avg(Vibration), vibrationstdev = stdev(Vibration)
+      by AssetId;
+
+// -------------------------
+// 4) detect anomalies with z-score logic
+// -------------------------
+let anomalyevents =
+    events
+    | join kind=inner (assetmapping) on AssetId
+    | where Timestamp >= _startTime and Timestamp <= _endTime
+    | where isempty(assetfilterparam) or assetname == assetfilterparam
+    | join kind=inner (sensorbaseline) on AssetId
+    | extend
+        speedzscore = iff(isnotnull(speedstdev) and speedstdev > 0, todecimal(abs(Speed - speedmean) / speedstdev), todecimal(0)),
+        tempzscore = iff(isnotnull(tempstdev) and tempstdev > 0, todecimal(abs(Temperature - tempmean) / tempstdev), todecimal(0)),
+        vibrationzscore = iff(isnotnull(vibrationstdev) and vibrationstdev > 0, todecimal(abs(Vibration - vibrationmean) / vibrationstdev), todecimal(0))
+    | extend 
+        speedanomaly = speedzscore > redzthreshold,
+        tempanomaly = tempzscore > redzthreshold,
+        vibrationanomaly = vibrationzscore > redzthreshold,
+        qualityanomaly = DefectProbability > 0.05
+    | project AssetId, assetname, Timestamp, speedanomaly, tempanomaly, vibrationanomaly, qualityanomaly;
+
+// -------------------------
+// 5) calculate correlation matrix
+// -------------------------
+anomalyevents
+| summarize
+    totalevents = count(),
+    speedanomalies = countif(speedanomaly),
+    tempanomalies = countif(tempanomaly),
+    vibrationanomalies = countif(vibrationanomaly),
+    qualityanomalies = countif(qualityanomaly),
+    speedtempboth = countif(speedanomaly and tempanomaly),
+    speedvibrationboth = countif(speedanomaly and vibrationanomaly),
+    speedqualityboth = countif(speedanomaly and qualityanomaly),
+    tempvibrationboth = countif(tempanomaly and vibrationanomaly),
+    tempqualityboth = countif(tempanomaly and qualityanomaly),
+    vibrationqualityboth = countif(vibrationanomaly and qualityanomaly)
+    by AssetId, assetname = coalesce(assetname, strcat("asset ", AssetId))
+| extend
+    speedtempcorr = iff(speedanomalies > 0, round(speedtempboth * 100.0 / speedanomalies, 1), 0.0),
+    speedvibrationcorr = iff(speedanomalies > 0, round(speedvibrationboth * 100.0 / speedanomalies, 1), 0.0),
+    speedqualitycorr = iff(speedanomalies > 0, round(speedqualityboth * 100.0 / speedanomalies, 1), 0.0),
+    tempvibrationcorr = iff(tempanomalies > 0, round(tempvibrationboth * 100.0 / tempanomalies, 1), 0.0),
+    tempqualitycorr = iff(tempanomalies > 0, round(tempqualityboth * 100.0 / tempanomalies, 1), 0.0),
+    vibrationqualitycorr = iff(vibrationanomalies > 0, round(vibrationqualityboth * 100.0 / vibrationanomalies, 1), 0.0)
+| extend
+    speedtempindicator = case(speedtempcorr >= 70, "🔴 Strong", speedtempcorr >= 40, "🟡 Moderate", speedtempcorr >= 20, "🟢 Weak", "⚪ none"),
+    speedvibrationindicator = case(speedvibrationcorr >= 70, "🔴 Strong", speedvibrationcorr >= 40, "🟡 Moderate", speedvibrationcorr >= 20, "🟢 Weak", "⚪ none"),
+    speedqualityindicator = case(speedqualitycorr >= 70, "🔴 Strong", speedqualitycorr >= 40, "🟡 Moderate", speedqualitycorr >= 20, "🟢 Weak", "⚪ none"),
+    tempvibrationindicator = case(tempvibrationcorr >= 70, "🔴 Strong", tempvibrationcorr >= 40, "🟡 Moderate", tempvibrationcorr >= 20, "🟢 Weak", "⚪ none"),
+    tempqualityindicator = case(tempqualitycorr >= 70, "🔴 Strong", tempqualitycorr >= 40, "🟡 Moderate", tempqualitycorr >= 20, "🟢 Weak", "⚪ none"),
+    vibrationqualityindicator = case(vibrationqualitycorr >= 70, "🔴 Strong", vibrationqualitycorr >= 40, "🟡 Moderate", vibrationqualitycorr >= 20, "🟢 Weak", "⚪ none")
+| project
+    ["asset"] = assetname,
+    ["speed→temp"] = strcat(speedtempindicator, " ", speedtempcorr, "%"),
+    ["speed→vibration"] = strcat(speedvibrationindicator, " ", speedvibrationcorr, "%"),
+    ["speed→quality"] = strcat(speedqualityindicator, " ", speedqualitycorr, "%"),
+    ["temp→vibration"] = strcat(tempvibrationindicator, " ", tempvibrationcorr, "%"),
+    ["temp→quality"] = strcat(tempqualityindicator, " ", tempqualitycorr, "%"),
+    ["vibration→quality"] = strcat(vibrationqualityindicator, " ", vibrationqualitycorr, "%"),
+    ["total anomalies"] = speedanomalies + tempanomalies + vibrationanomalies + qualityanomalies
+| order by ["total anomalies"] desc
+| render table
+    with (
+        title = "🔗 anomaly correlation matrix - when one metric has anomaly, % chance others do too"
+    )

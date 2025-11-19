@@ -1,0 +1,165 @@
+// =============================================================================
+// Service Order Data Enrichment Function
+// =============================================================================
+// Purpose: Creates a reusable KQL function to enrich event data with 
+//          dimensional information from assets, sites, locations, and products
+// Usage: Can be called from Activator rules or other KQL queries
+// Author: Data Manufacturing Analytics Team
+// Date: November 11, 2025
+// =============================================================================
+
+// Create FULL enrichment function - assets + sites + locations + products
+.create-or-alter function EnrichEventData(eventAssetId: string, eventProductId: string) {
+    assets
+    | where Id == eventAssetId
+    | extend 
+        AssetName = Name,
+        AssetType = Type,
+        AssetSerialNumber = SerialNumber,
+        AssetMaintenanceStatus = MaintenanceStatus
+    | lookup kind=inner sites on $left.SiteId == $right.Id
+    | lookup kind=inner locations on $left.LocationId == $right.Id
+    | extend ProductId = eventProductId
+    | lookup kind=inner products on $left.ProductId == $right.Id
+    | project 
+        // Asset information
+        AssetName,
+        AssetType,
+        AssetSerialNumber,
+        AssetMaintenanceStatus,
+        // Site information  
+        SiteId = SiteId,
+        SiteName = Name1,
+        SitePlantType = PlantType,
+        // Location information
+        LocationId = LocationId,
+        LocationCity = City,
+        LocationCountry = Country,
+        // Product information
+        ProductName = Name2,
+        ProductCategory = CategoryName,
+        ProductBrandName = BrandName,
+        ProductColor = Color,
+        ProductListPrice = ListPrice
+}
+
+// =============================================================================
+// Test the function with sample data
+// =============================================================================
+
+// Test function with known asset and product IDs
+// Uncomment the lines below to test after creating your dimensional tables
+
+/*
+// Test 1: Basic function test
+EnrichEventData("A_1000", "P_1000")
+
+// Test 2: Check if function was created
+.show functions
+| where Name == "EnrichEventData"
+
+// Test 3: Manual enrichment approach (without using function in extend)
+let eventData = events | where Temperature > 40 | take 1;
+let assetId = toscalar(eventData | project AssetId);
+let productId = toscalar(eventData | project ProductId);
+union 
+    (eventData | project EventId = Id, AssetId, ProductId, Temperature, Type = "event"),
+    (EnrichEventData(assetId, productId) | extend Type = "enriched")
+*/
+
+// =============================================================================
+// Usage Examples for Activator Rules
+// =============================================================================
+
+/*
+// Example 1: Temperature anomaly with enrichment
+events
+| where ingestion_time() > ago(5m)
+| where Temperature > 40
+| extend EnrichedInfo = EnrichEventData(AssetId, ProductId)
+| project 
+    EventId = Id,
+    AssetId,
+    ProductId,
+    BatchId,
+    Timestamp,
+    Temperature,
+    AlertType = "temperature",
+    AlertValue = Temperature,
+    // Enriched asset information
+    AssetName = EnrichedInfo.AssetName,
+    AssetType = EnrichedInfo.AssetType,
+    AssetSerialNumber = EnrichedInfo.AssetSerialNumber,
+    AssetMaintenanceStatus = EnrichedInfo.AssetMaintenanceStatus,
+    // Enriched site information
+    SiteId = EnrichedInfo.SiteId,
+    SiteName = EnrichedInfo.SiteName,
+    SitePlantType = EnrichedInfo.SitePlantType,
+    // Enriched location information
+    LocationId = EnrichedInfo.LocationId,
+    LocationCity = EnrichedInfo.LocationCity,
+    LocationCountry = EnrichedInfo.LocationCountry,
+    // Enriched product information
+    ProductName = EnrichedInfo.ProductName,
+    ProductCategory = EnrichedInfo.ProductCategory,
+    ProductBrandName = EnrichedInfo.ProductBrandName,
+    ProductColor = EnrichedInfo.ProductColor,
+    ProductListPrice = EnrichedInfo.ProductListPrice
+
+// Example 2: Vibration anomaly with enrichment
+events
+| where ingestion_time() > ago(5m)
+| where Vibration > 0.4
+| extend EnrichedInfo = EnrichEventData(AssetId, ProductId)
+| project 
+    EventId = Id,
+    AssetId,
+    ProductId,
+    BatchId,
+    Timestamp,
+    Vibration,
+    AlertType = "vibration",
+    AlertValue = Vibration,
+    // Add all enriched fields (same as temperature example)
+    AssetName = EnrichedInfo.AssetName,
+    AssetType = EnrichedInfo.AssetType,
+    // ... (continue with all enriched fields)
+
+// Example 3: Quality anomaly with enrichment
+events
+| where ingestion_time() > ago(5m)
+| where DefectProbability > 0.15
+| extend EnrichedInfo = EnrichEventData(AssetId, ProductId)
+| project 
+    EventId = Id,
+    AssetId,
+    ProductId,
+    BatchId,
+    Timestamp,
+    DefectProbability,
+    AlertType = "quality",
+    AlertValue = DefectProbability,
+    // Add all enriched fields
+    AssetName = EnrichedInfo.AssetName,
+    AssetType = EnrichedInfo.AssetType,
+    // ... (continue with all enriched fields)
+*/
+
+// =============================================================================
+// Function Verification Queries
+// =============================================================================
+
+/*
+// Verify the function was created successfully
+.show functions
+| where Name == "EnrichEventData"
+
+// Show function definition
+.show function EnrichEventData
+
+// Test function performance (run after tables are populated)
+let startTime = now();
+let result = EnrichEventData("A_1000", "P_1000");
+let endTime = now();
+print FunctionExecutionTime = endTime - startTime, Result = result
+*/

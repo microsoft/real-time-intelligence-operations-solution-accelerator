@@ -1,0 +1,90 @@
+// =========================
+// Tile:  Real-Time Sensor Status with Z-Score Analysis
+// Purpose: Show the latest sensor readings with statistical anomaly detection (z‑scores)
+// Refresh cadence: Every 30 seconds
+// =========================
+
+// -------------------------
+// 1) Configuration & Parameters
+// -------------------------
+let BaselineWindow          = 30d;       // Statistical baseline lookback
+let BaselineExcludeRecent   = 24h;       // Exclude latest 24h to stabilize baseline
+let RedZThreshold           = 2.0;       // z-score threshold for Red status
+let YellowZThreshold        = 1.5;       // z-score threshold for Yellow status
+let DefectRedThreshold      = 0.05;      // DefectProbability threshold for Red
+let DefectYellowThreshold   = 0.02;      // DefectProbability threshold for Yellow
+
+// Optional single-asset filter. Leave empty ("") to show all.
+let AssetFilterParam        = tostring(['AssetFilter']); // expects a string or empty
+
+// -------------------------
+// 2) Asset mapping (Id -> Name)
+// -------------------------
+let assetMapping =
+    assets
+    | project AssetId = Id, AssetName = Name;
+
+// -------------------------
+// 3) Baseline statistics for anomaly detection
+//    Build stats over historical window while excluding the most recent 24h
+// -------------------------
+let sensorBaseline =
+    events
+    | join kind=inner (assetMapping) on AssetId
+    | where Timestamp >= ago(BaselineWindow) and Timestamp <= ago(BaselineExcludeRecent)
+    | where isempty(AssetFilterParam) or AssetName == AssetFilterParam
+    | summarize
+        SpeedMean       = avg(Speed),
+        SpeedStdev      = stdev(Speed),
+        TempMean        = avg(Temperature),
+        TempStdev       = stdev(Temperature),
+        VibrationMean   = avg(Vibration),
+        VibrationStdev  = stdev(Vibration),
+        DefectMean      = avg(DefectProbability),
+        DefectStdev     = stdev(DefectProbability)
+      by AssetId;
+
+// -------------------------
+// 4) Latest readings in requested time range (_startTime/_endTime)
+//    Use arg_max to get the most recent event per asset
+// -------------------------
+events
+| join kind=inner (assetMapping) on AssetId
+| where Timestamp >= _startTime and Timestamp <= _endTime
+| where isempty(AssetFilterParam) or AssetName == AssetFilterParam
+| summarize arg_max(Timestamp, *) by AssetId
+| join kind=leftouter (sensorBaseline) on AssetId
+// -------------------------
+// 5) Z-score calculations (null-safe)
+//    z = |x - mean| / stdev; 0 if stats are missing or stdev <= 0
+// -------------------------
+| extend
+    SpeedZScore = iff(isnotnull(SpeedStdev)      and SpeedStdev      > 0, todecimal(abs(Speed        - SpeedMean)      / SpeedStdev),      todecimal(0)),
+    TempZScore  = iff(isnotnull(TempStdev)       and TempStdev       > 0, todecimal(abs(Temperature  - TempMean)       / TempStdev),       todecimal(0)),
+    VibZScore   = iff(isnotnull(VibrationStdev)  and VibrationStdev  > 0, todecimal(abs(Vibration    - VibrationMean)  / VibrationStdev),  todecimal(0)),
+    DefZScore   = iff(isnotnull(DefectStdev)     and DefectStdev     > 0, todecimal(abs(DefectProbability - DefectMean) / DefectStdev),    todecimal(0))
+// -------------------------
+// 6) Status assignment (emoji bands)
+//    Uses z-score thresholds for Speed/Temp/Vibration and raw probability for Defect
+// -------------------------
+| extend
+    SpeedStatus     = case(SpeedZScore > RedZThreshold,   "🔴",
+                           SpeedZScore > YellowZThreshold, "🟡", "🟢"),
+    TempStatus      = case(TempZScore  > RedZThreshold,   "🔴",
+                           TempZScore  > YellowZThreshold, "🟡", "🟢"),
+    VibrationStatus = case(VibZScore   > RedZThreshold,   "🔴",
+                           VibZScore   > YellowZThreshold, "🟡", "🟢"),
+    DefectStatus    = case(DefectProbability > DefectRedThreshold,   "🔴",
+                           DefectProbability > DefectYellowThreshold, "🟡", "🟢")
+// -------------------------
+// 8) Presentation: columns & formatting
+// -------------------------
+| project
+    AssetName,
+    ["Speed"]               = strcat(SpeedStatus, " ", round(Speed, 1), " RPM (Z:", round(SpeedZScore, 1), ")"),
+    ["Temperature"]         = strcat(TempStatus, " ", round(Temperature, 1), "°F (Z:", round(TempZScore, 1), ")"),
+    ["Vibration"]           = strcat(VibrationStatus, " ", round(Vibration, 3), " (Z:", round(VibZScore, 1), ")"),
+    ["Defect Probability"]  = strcat(DefectStatus, " ", round(DefectProbability * 100, 1), "%"),
+       ["Last Update"]         = format_datetime(Timestamp, "HH:mm:ss")
+| order by AssetName asc
+| render table

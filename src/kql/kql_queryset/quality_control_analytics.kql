@@ -1,0 +1,17 @@
+// UTILITY: Quality Control Analytics (Simplified)
+// PURPOSE: Quality analysis and defect pattern identification
+// USAGE: Monitor quality trends by asset
+
+// Simple Quality Analysis by Asset
+events
+| summarize 
+    TotalProducts = count(),
+    AvgDefectRate = round(avg(DefectProbability) * 100, 2),
+    MaxDefectRate = round(max(DefectProbability) * 100, 2),
+    HighDefectEvents = countif(DefectProbability > 0.05),
+    CriticalDefectEvents = countif(DefectProbability > 0.10),
+    AvgSpeed = round(avg(Speed), 1),
+    AvgTemp = round(avg(Temperature), 1)
+by AssetId
+| extend QualityScore = round((1 - AvgDefectRate/100) * 100, 1)
+| order by AvgDefectRate asc

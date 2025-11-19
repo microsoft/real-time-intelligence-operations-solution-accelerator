@@ -1,0 +1,75 @@
+// =========================
+// tile: asset qualiy metrics
+// purpose: compare asset Anomaly Rate% and Quality Issues% side-by-side for operational insights
+// refresh cadence: every 30 seconds
+// =========================
+
+// -------------------------
+// 1) configuration & parameters
+// -------------------------
+let baselinewindow = ago(30d); // use 30 days for statistical baseline
+let assetfilterparam = tostring(['AssetFilter']); // optional asset filter
+
+// -------------------------
+// 2) asset mapping (id -> name)
+// -------------------------
+let assetmapping =
+    assets
+    | project AssetId = Id, assetname = Name;
+// -------------------------
+// 3) calculate baseline statistics (exclude last 24h for stability)
+// -------------------------
+let sensorbaseline =
+    events
+    | join kind=inner (assetmapping) on AssetId
+    | where Timestamp >= baselinewindow and Timestamp <= ago(24h)
+    | where isempty(assetfilterparam) or assetname == assetfilterparam
+    | summarize
+        speedmean = avg(Speed), speedstdev = stdev(Speed),
+        tempmean = avg(Temperature), tempstdev = stdev(Temperature),
+        vibrationmean = avg(Vibration), vibrationstdev = stdev(Vibration)
+      by AssetId;
+// -------------------------
+// 4) analyze recent performance
+// -------------------------
+events
+| join kind=inner (assetmapping) on AssetId
+| where Timestamp >= _startTime and Timestamp <= _endTime
+| where isempty(assetfilterparam) or assetname == assetfilterparam
+| join kind=leftouter (sensorbaseline) on AssetId
+| extend
+    speedanomaly = iff(isnotnull(speedstdev) and speedstdev > 0, abs(Speed - speedmean) / speedstdev > 2.0, false),// Calculating Speed Z score
+    tempanomaly = iff(isnotnull(tempstdev) and tempstdev > 0, abs(Temperature - tempmean) / tempstdev > 2.0, false), // Calculating Temp Z score
+    vibrationanomaly = iff(isnotnull(vibrationstdev) and vibrationstdev > 0, abs(Vibration - vibrationmean) / vibrationstdev > 2.0, false), // Calculating Vibration Z score
+    qualityissue = DefectProbability > 0.05
+| summarize
+    totalevents = count(),
+    speedanomalies = countif(speedanomaly),
+    tempanomalies = countif(tempanomaly),
+    vibrationanomalies = countif(vibrationanomaly),
+    qualityissues = countif(qualityissue),
+    avgspeed = round(avg(Speed), 1),
+    avgtemp = round(avg(Temperature), 1),
+    avgvibration = round(avg(Vibration), 3),
+    avgdefectprob = round(avg(DefectProbability) * 100, 1)
+    by assetname
+| extend
+    anomalyrate = round((speedanomalies + tempanomalies + vibrationanomalies) * 100.0 / totalevents, 1),
+    qualityrate = round(qualityissues * 100.0 / totalevents, 1)
+| extend performancescore = case(
+    anomalyrate < 5 and qualityrate < 10, "🟢 excellent",
+    anomalyrate < 10 and qualityrate < 20, "🟡 good",
+    "🔴 needs attention"
+)
+| project
+    assetname,
+    ["anomaly rate %"] = anomalyrate,
+    ["quality issues %"] = qualityrate
+| order by assetname asc
+| render columnchart
+    with (
+        title = "📊 asset performance comparison: anomaly vs quality issues",
+        xtitle = "asset",
+        ytitle = "percentage (%)",
+        legend = visible
+    )

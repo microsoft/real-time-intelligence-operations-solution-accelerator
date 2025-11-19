@@ -1,0 +1,27 @@
+// ANALYSIS: Detailed Defect Statistics (Simplified)
+// PURPOSE: Statistical distribution analysis of defect probabilities
+// USAGE: Deep dive into defect probability patterns and thresholds
+
+// Statistical Analysis of Defect Probabilities by Asset
+events
+| summarize 
+    Events = count(),
+    MinDefect = round(min(DefectProbability), 4),
+    MaxDefect = round(max(DefectProbability), 4),
+    MeanDefect = round(avg(DefectProbability), 4),
+    MedianDefect = round(percentile(DefectProbability, 50), 4),
+    StdDevDefect = round(stdev(DefectProbability), 4),
+    P95Defect = round(percentile(DefectProbability, 95), 4),
+    Above5Percent = countif(DefectProbability > 0.05),
+    Above10Percent = countif(DefectProbability > 0.10),
+    Above15Percent = countif(DefectProbability > 0.15)
+by AssetId
+| extend 
+    MeanPercent = round(MeanDefect * 100, 2),
+    MedianPercent = round(MedianDefect * 100, 2),
+    P95Percent = round(P95Defect * 100, 2)
+| extend
+    QualityIssueRate = round(Above5Percent * 100.0 / Events, 1),
+    HighDefectRate = round(Above10Percent * 100.0 / Events, 1),
+    CriticalDefectRate = round(Above15Percent * 100.0 / Events, 1)
+| order by MeanPercent asc

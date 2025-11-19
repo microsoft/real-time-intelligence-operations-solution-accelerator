@@ -1,0 +1,27 @@
+// UTILITY: Asset Performance Analysis (Simplified)
+// PURPOSE: Analyze your 2 assets over 3 months of data (259K events)
+// USAGE: Compare Asset A_1000 vs A_1001 performance
+
+// Asset Comparison - Your 2 Assets Performance
+events
+| summarize 
+    TotalEvents = count(),
+    AvgSpeed = round(avg(Speed), 1),
+    AvgTemp = round(avg(Temperature), 1),
+    AvgDefectRate = round(avg(DefectProbability) * 100, 2),
+    MinSpeed = round(min(Speed), 1),
+    MaxSpeed = round(max(Speed), 1),
+    MinTemp = round(min(Temperature), 1),
+    MaxTemp = round(max(Temperature), 1),
+    FirstEvent = min(Timestamp),
+    LastEvent = max(Timestamp)
+    by AssetId
+| extend 
+    PerformanceRating = case(
+        AvgSpeed >= 50 and AvgDefectRate <= 5, "� Excellent",
+        AvgSpeed >= 40 and AvgDefectRate <= 8, "🟡 Good",
+        AvgSpeed >= 30 and AvgDefectRate <= 12, "🟠 Fair", 
+        "� Needs Attention"
+    ),
+    SpeedRange = strcat(MinSpeed, " - ", MaxSpeed, " RPM"),
+    TempRange = strcat(MinTemp, " - ", MaxTemp, "°C")

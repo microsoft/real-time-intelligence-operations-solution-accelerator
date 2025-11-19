@@ -1,0 +1,65 @@
+//Z-score based threshold analysis for DefectProbability using ±2 standard deviations
+//Z-score = ±2 for 95% confidence interval (approximately 2 standard deviations)
+
+let analysisEndTime = now() - 1d;  // Exclude last 24 hours
+let analysisStartTime = analysisEndTime - 30d;  // 30 days of historical data
+let zScoreThreshold = 2.0;  // 2 standard deviations for threshold detection
+//
+events
+| where Timestamp >= analysisStartTime and Timestamp <= analysisEndTime
+| where isnotnull(DefectProbability)
+| summarize 
+    // Basic statistics
+    MinDefectProbability = min(DefectProbability),
+    MaxDefectProbability = max(DefectProbability),
+    AvgDefectProbability = avg(DefectProbability),
+    StdDevDefectProbability = stdev(DefectProbability),
+    MedianDefectProbability = percentile(DefectProbability, 50),
+    TotalEvents = count(),
+    NonZeroEvents = countif(DefectProbability > 0),
+    // Z-score based thresholds (±2 standard deviations)
+    LowerThreshold_ZScore2 = avg(DefectProbability) - (zScoreThreshold * stdev(DefectProbability)),
+    UpperThreshold_ZScore2 = avg(DefectProbability) + (zScoreThreshold * stdev(DefectProbability)),
+    // Additional percentile reference points for comparison
+    P5DefectProbability = percentile(DefectProbability, 5),
+    P95DefectProbability = percentile(DefectProbability, 95),
+    P99DefectProbability = percentile(DefectProbability, 99),
+    P99_5DefectProbability = percentile(DefectProbability, 99.5)
+| extend
+    // Calculate threshold range and analysis info
+    ThresholdRange = UpperThreshold_ZScore2 - LowerThreshold_ZScore2,
+    AnalysisPeriod = strcat("30 days ending ", format_datetime(analysisEndTime, 'yyyy-MM-dd HH:mm')),
+    ZScoreUsed = zScoreThreshold,
+    // Calculate how many standard deviations the min/max values are from mean
+    MinValue_ZScore = (MinDefectProbability - AvgDefectProbability) / StdDevDefectProbability,
+    MaxValue_ZScore = (MaxDefectProbability - AvgDefectProbability) / StdDevDefectProbability,
+    // Practical threshold (since negative defect probability doesn't make sense)
+    PracticalLowerThreshold = case(LowerThreshold_ZScore2 < 0, 0.0, LowerThreshold_ZScore2),
+    // Non-zero defect rate analysis
+    NonZeroDefectRate = round(todouble(NonZeroEvents) / todouble(TotalEvents) * 100.0, 2)
+| project 
+    Metric = "DefectProbability Z-Score Analysis (±2σ)",
+    AnalysisPeriod,
+    TotalEvents,
+    NonZeroEvents,
+    NonZeroDefectRate_Percent = NonZeroDefectRate,
+    ZScoreUsed,
+    // Core statistics
+    AvgDefectProbability = round(AvgDefectProbability, 6),
+    StdDevDefectProbability = round(StdDevDefectProbability, 6),
+    // Z-score thresholds for Activator rules (PRIMARY OUTPUT)
+    PracticalLowerThreshold = round(PracticalLowerThreshold, 6),
+    UpperThreshold_ZScore2 = round(UpperThreshold_ZScore2, 6),
+    ThresholdRange = round(ThresholdRange, 6),
+    // Reference data for comparison
+    MinDefectProbability = round(MinDefectProbability, 6),
+    MaxDefectProbability = round(MaxDefectProbability, 6),
+    MedianDefectProbability = round(MedianDefectProbability, 6),
+    P5DefectProbability = round(P5DefectProbability, 6),
+    P95DefectProbability = round(P95DefectProbability, 6),
+    P99DefectProbability = round(P99DefectProbability, 6),
+    P99_5DefectProbability = round(P99_5DefectProbability, 6),
+    // Z-score analysis of actual min/max values
+    MinValue_ZScore = round(MinValue_ZScore, 2),
+    MaxValue_ZScore = round(MaxValue_ZScore, 2)
+

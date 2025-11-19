@@ -1,0 +1,37 @@
+//***********************************************************************************************************
+// Here are two articles to help you get started with KQL:
+// KQL reference guide - https://aka.ms/KQLguide
+// SQL - KQL conversions - https://aka.ms/sqlcheatsheet
+//***********************************************************************************************************
+
+.create table service_order_payload (
+    ServiceOrderId: string,
+    AlertType: string,
+    AssetId: string,
+    AssetName: string,
+    AssetType: string,
+    AssetSerialNumber: string,
+    AssetMaintenanceStatus: string,
+    ProductId: string,
+    ProductName: string,
+    ProductCategory: string,
+    ProductBrandName: string,
+    ProductColor: string,
+    ProductListPrice: real,
+    SiteId: string,
+    SiteName: string,
+    SitePlantType: string,
+    LocationId: string,
+    LocationCity: string,
+    LocationCountry: string,
+    BatchId: string,
+    Timestamp: datetime,
+    AlertValue: dynamic,
+    ActionRequired: string,
+    Priority: string,
+    Status: string,
+    AssignedTo: string,
+    AlertRuleName: string,
+    CreatedAt: datetime,
+    ResolvedAt: datetime
+)

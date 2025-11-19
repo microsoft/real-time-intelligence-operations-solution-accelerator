@@ -1,0 +1,57 @@
+//Z-score based threshold analysis for Speed using ±2 standard deviations
+//Z-score = ±2 for 95% confidence interval (approximately 2 standard deviations)
+
+let analysisEndTime = now() - 1d;  // Exclude last 24 hours
+let analysisStartTime = analysisEndTime - 30d;  // 30 days of historical data
+let zScoreThreshold = 2.0;  // 2 standard deviations for threshold detection
+//
+events
+| where Timestamp >= analysisStartTime and Timestamp <= analysisEndTime
+| where isnotnull(Speed)
+| summarize 
+    // Basic statistics
+    MinSpeed = min(Speed),
+    MaxSpeed = max(Speed),
+    AvgSpeed = avg(Speed),
+    StdDevSpeed = stdev(Speed),
+    MedianSpeed = percentile(Speed, 50),
+    TotalEvents = count(),
+    // Z-score based thresholds (±2 standard deviations)
+    LowerThreshold_ZScore2 = avg(Speed) - (zScoreThreshold * stdev(Speed)),
+    UpperThreshold_ZScore2 = avg(Speed) + (zScoreThreshold * stdev(Speed)),
+    // Additional percentile reference points for comparison
+    P5Speed = percentile(Speed, 5),
+    P95Speed = percentile(Speed, 95)
+| extend
+    // Calculate threshold range and analysis info
+    ThresholdRange = UpperThreshold_ZScore2 - LowerThreshold_ZScore2,
+    AnalysisPeriod = strcat("30 days ending ", format_datetime(analysisEndTime, 'yyyy-MM-dd HH:mm')),
+    ZScoreUsed = zScoreThreshold,
+    // Calculate how many standard deviations the min/max values are from mean
+    MinValue_ZScore = (MinSpeed - AvgSpeed) / StdDevSpeed,
+    MaxValue_ZScore = (MaxSpeed - AvgSpeed) / StdDevSpeed,
+    // Calculate coefficient of variation (CV) for speed stability assessment
+    CoefficientOfVariation = (StdDevSpeed / AvgSpeed) * 100.0
+| project 
+    Metric = "Speed Z-Score Analysis (±2σ)",
+    AnalysisPeriod,
+    TotalEvents,
+    ZScoreUsed,
+    // Core statistics
+    AvgSpeed = round(AvgSpeed, 2),
+    StdDevSpeed = round(StdDevSpeed, 3),
+    CoefficientOfVariation_Percent = round(CoefficientOfVariation, 2),
+    // Z-score thresholds for Activator rules (PRIMARY OUTPUT)
+    LowerThreshold_ZScore2 = round(LowerThreshold_ZScore2, 2),
+    UpperThreshold_ZScore2 = round(UpperThreshold_ZScore2, 2),
+    ThresholdRange = round(ThresholdRange, 2),
+    // Reference data for comparison
+    MinSpeed = round(MinSpeed, 2),
+    MaxSpeed = round(MaxSpeed, 2),
+    MedianSpeed = round(MedianSpeed, 2),
+    P5Speed = round(P5Speed, 2),
+    P95Speed = round(P95Speed, 2),
+    // Z-score analysis of actual min/max values
+    MinValue_ZScore = round(MinValue_ZScore, 2),
+    MaxValue_ZScore = round(MaxValue_ZScore, 2)
+

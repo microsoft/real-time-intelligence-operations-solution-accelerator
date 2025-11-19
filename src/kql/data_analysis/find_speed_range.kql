@@ -1,0 +1,15 @@
+//Raw data range for setting activator rules 
+
+events
+| summarize 
+    MinSpeed = min(Speed),
+    MaxSpeed = max(Speed),
+    AvgSpeed = avg(Speed),
+    MedianSpeed = percentile(Speed, 50),
+    P95Speed = percentile(Speed, 95),
+    P5Speed = percentile(Speed, 5),
+    TotalEvents = count()
+| project 
+    Metric = "Speed Analysis",
+    MinSpeed, MaxSpeed, AvgSpeed, MedianSpeed, P95Speed, P5Speed, TotalEvents
+
