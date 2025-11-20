@@ -7,7 +7,7 @@ It loads dashboard configuration from a JSON file, encodes it to Base64, and cre
 using the Fabric API.
 
 Usage:
-    python fabric_real_time_dashboard.py --workspace-id "workspace-id" --dashboard-title "Dashboard Title" --dashboard-file "dashboard.json"
+    python fabric_real_time_dashboard.py --workspace-id "workspace-id" --dashboard-title "Dashboard Title" --dashboard-file "dashboard.json" --cluster-uri "cluster-uri" --eventhouse-database-id "database-id"
 
 Requirements:
     - fabric_api.py module in the same directory
@@ -120,7 +120,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python fabric_real_time_dashboard.py --workspace-id "12345678-1234-1234-1234-123456789012" --dashboard-title "Manufacturing RTI Dashboard" --dashboard-file "rti-dashboard.json"
+  python fabric_real_time_dashboard.py --workspace-id "12345678-1234-1234-1234-123456789012" --dashboard-title "Manufacturing RTI Dashboard" --dashboard-file "rti-dashboard.json" --cluster-uri "https://cluster.kusto.windows.net" --eventhouse-database-id "d032514a-dc48-4347-b476-ce71f9aa7597"
         """
     )
     
@@ -142,6 +142,18 @@ Examples:
         help="Path to the JSON file containing the dashboard configuration"
     )
     
+    parser.add_argument(
+        "--cluster-uri", 
+        required=True, 
+        help="URI of the KQL cluster for the dashboard data sources"
+    )
+    
+    parser.add_argument(
+        "--eventhouse-database-id", 
+        required=True, 
+        help="ID of the eventhouse database for the dashboard data sources"
+    )
+    
     # Parse arguments
     args = parser.parse_args()
     
@@ -149,6 +161,8 @@ Examples:
     print(f"  Workspace ID: {args.workspace_id}")
     print(f"  Dashboard Title: {args.dashboard_title}")
     print(f"  Dashboard File: {args.dashboard_file}")
+    print(f"  Cluster URI: {args.cluster_uri}")
+    print(f"  Database ID: {args.eventhouse_database_id}")
     print("=" * 60)
     
     # Execute the main logic
@@ -157,8 +171,8 @@ Examples:
             workspace_id=args.workspace_id,
             dashboard_title=args.dashboard_title,
             rti_dashboard_file_path=args.dashboard_file,
-            cluster_uri="<cluster_uri_placeholder>",  # This would need to be passed as argument
-            eventhouse_database_id="<database_id_placeholder>"  # This would need to be passed as argument
+            cluster_uri=args.cluster_uri,
+            eventhouse_database_id=args.eventhouse_database_id
         )
         
         print(f"\n🎉 Real-Time Dashboard setup completed successfully.")

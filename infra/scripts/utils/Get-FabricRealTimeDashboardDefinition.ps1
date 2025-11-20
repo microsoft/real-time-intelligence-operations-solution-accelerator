@@ -1,45 +1,45 @@
 <#
 .SYNOPSIS
-    Get Microsoft Fabric Eventstream Definition using REST API
+    Get Microsoft Fabric Real Time Dashboard (KQL Dashboard) Definition using REST API
 
 .DESCRIPTION
-    This script retrieves and decodes Microsoft Fabric Eventstream definitions using the Fabric REST API.
+    This script retrieves and decodes Microsoft Fabric Real Time Dashboard (KQL Dashboard) definitions using the Fabric REST API.
     It handles Azure CLI authentication, makes the API request, and decodes the Base64 payload to provide
-    readable eventstream configuration including sources, destinations, operators, and streams.
+    readable dashboard configuration including queries, parameters, data sources, and visualization tiles.
     By default, it also tokenizes the resulting JSON files using the Run-FabricJsonTokenizer.ps1 script.
 
 .PARAMETER WorkspaceId
-    The workspace ID (GUID) containing the eventstream
+    The workspace ID (GUID) containing the KQL dashboard
 
-.PARAMETER EventstreamId
-    The eventstream ID (GUID) to retrieve
+.PARAMETER KqlDashboardId
+    The KQL dashboard ID (GUID) to retrieve
 
 .PARAMETER FolderPath
-    Path to save the decoded definition files (defaults to "src/eventstream" relative to repository root)
+    Path to save the decoded definition files (defaults to "src/realTimeDashboard" relative to repository root)
 
 .PARAMETER Format
-    Optional format parameter for the eventstream definition (as supported by the API)
+    Optional format parameter for the KQL dashboard definition (as supported by the API)
 
 .PARAMETER SkipTokenization
     If specified, skips the automatic tokenization of JSON files after creation
 
 .EXAMPLE
-    .\Get-FabricEventstreamDefinition.ps1 -WorkspaceId "aaaabbbb-0000-cccc-1111-dddd2222eeee" -EventstreamId "bbbbcccc-1111-dddd-2222-eeee3333ffff"
+    .\Get-FabricRealTimeDashboardDefinition.ps1 -WorkspaceId "aaaabbbb-0000-cccc-1111-dddd2222eeee" -KqlDashboardId "bbbbcccc-1111-dddd-2222-eeee3333ffff"
 
 .EXAMPLE
-    .\Get-FabricEventstreamDefinition.ps1 -WorkspaceId "aaaabbbb-0000-cccc-1111-dddd2222eeee" -EventstreamId "bbbbcccc-1111-dddd-2222-eeee3333ffff" -FolderPath "C:\temp\eventstream"
+    .\Get-FabricRealTimeDashboardDefinition.ps1 -WorkspaceId "aaaabbbb-0000-cccc-1111-dddd2222eeee" -KqlDashboardId "bbbbcccc-1111-dddd-2222-eeee3333ffff" -FolderPath "C:\temp\dashboard"
 
 .NOTES
     Requires Azure CLI to be installed and logged in with appropriate permissions to access Fabric resources.
     
     Required Scopes:
-    - Eventstream.Read.All or Eventstream.ReadWrite.All
+    - KQLDashboard.ReadWrite.All or Item.ReadWrite.All
     
     Required Permissions:
-    - Viewer workspace role or higher
+    - Read and write permissions for the KQL dashboard
 
 .LINK
-    https://learn.microsoft.com/en-us/fabric/real-time-intelligence/event-streams/api-get-eventstream-definition
+    https://learn.microsoft.com/en-us/rest/api/fabric/kqldashboard/items/get-kql-dashboard-definition
 #>
 
 [CmdletBinding()]
@@ -50,7 +50,7 @@ param(
     
     [Parameter(Mandatory = $true)]
     [ValidatePattern('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')]
-    [string]$EventstreamId,
+    [string]$KqlDashboardId,
     
     [Parameter(Mandatory = $false)]
     [string]$FolderPath = $null,
@@ -307,17 +307,17 @@ function Invoke-JsonTokenization {
     }
 }
 
-function Get-EventstreamDefinition {
+function Get-KqlDashboardDefinition {
     <#
     .SYNOPSIS
-        Get and decode Eventstream definition from Fabric API
+        Get and decode KQL Dashboard (Real Time Dashboard) definition from Fabric API
     #>
     
     try {
-        Write-Log "Getting eventstream definition for workspace $WorkspaceId, eventstream $EventstreamId"
+        Write-Log "Getting KQL dashboard definition for workspace $WorkspaceId, dashboard $KqlDashboardId"
         
         # Build URI with optional format parameter
-        $uri = "workspaces/$WorkspaceId/eventstreams/$EventstreamId/getDefinition"
+        $uri = "workspaces/$WorkspaceId/kqlDashboards/$KqlDashboardId/getDefinition"
         if ($Format) {
             $uri += "?format=$Format"
         }
@@ -363,7 +363,7 @@ function Get-EventstreamDefinition {
             } while ($true)
         }
         elseif ($response.StatusCode -ne 200) {
-            throw "Failed to get eventstream definition. Status: $($response.StatusCode)"
+            throw "Failed to get KQL dashboard definition. Status: $($response.StatusCode)"
         }
         
         # Parse response
@@ -373,7 +373,7 @@ function Get-EventstreamDefinition {
             throw "Invalid response format: missing definition or parts"
         }
         
-        Write-Log "Retrieved eventstream definition with $($responseData.definition.parts.Count) part(s)"
+        Write-Log "Retrieved KQL dashboard definition with $($responseData.definition.parts.Count) part(s)"
         
         # Decode all parts
         $decodedParts = @{}
@@ -393,21 +393,51 @@ function Get-EventstreamDefinition {
                         
                         # Analyze content based on file name
                         switch ($part.path) {
-                            "eventstream.json" {
-                                # Analyze eventstream configuration
-                                $sources = if ($jsonContent.sources) { $jsonContent.sources.Count } else { 0 }
-                                $destinations = if ($jsonContent.destinations) { $jsonContent.destinations.Count } else { 0 }
-                                $operators = if ($jsonContent.operators) { $jsonContent.operators.Count } else { 0 }
-                                $streams = if ($jsonContent.streams) { $jsonContent.streams.Count } else { 0 }
+                            "RealTimeDashboard.json" {
+                                # Analyze dashboard configuration
+                                $tiles = if ($jsonContent.tiles) { $jsonContent.tiles.Count } else { 0 }
+                                $queries = if ($jsonContent.queries) { $jsonContent.queries.Count } else { 0 }
+                                $baseQueries = if ($jsonContent.baseQueries) { $jsonContent.baseQueries.Count } else { 0 }
+                                $dataSources = if ($jsonContent.dataSources) { $jsonContent.dataSources.Count } else { 0 }
+                                $parameters = if ($jsonContent.parameters) { $jsonContent.parameters.Count } else { 0 }
+                                $pages = if ($jsonContent.pages) { $jsonContent.pages.Count } else { 0 }
                                 
-                                $summaryInfo["Sources"] = $sources
-                                $summaryInfo["Destinations"] = $destinations
-                                $summaryInfo["Operators"] = $operators
-                                $summaryInfo["Streams"] = $streams
+                                $summaryInfo["Tiles"] = $tiles
+                                $summaryInfo["Queries"] = $queries
+                                $summaryInfo["Base Queries"] = $baseQueries
+                                $summaryInfo["Data Sources"] = $dataSources
+                                $summaryInfo["Parameters"] = $parameters
+                                $summaryInfo["Pages"] = $pages
+                                
+                                if ($jsonContent.title) {
+                                    $summaryInfo["Title"] = $jsonContent.title
+                                }
+                                
+                                if ($jsonContent.schema_version) {
+                                    $summaryInfo["Schema Version"] = $jsonContent.schema_version
+                                }
+                                
+                                if ($jsonContent.autoRefresh) {
+                                    $autoRefresh = if ($jsonContent.autoRefresh.enabled) { "Enabled" } else { "Disabled" }
+                                    $summaryInfo["Auto Refresh"] = $autoRefresh
+                                }
                             }
-                            "eventstreamProperties.json" {
-                                if ($jsonContent -is [System.Object] -and $jsonContent.PSObject.Properties.Count -gt 0) {
-                                    $summaryInfo["Properties"] = $jsonContent.PSObject.Properties.Count
+                            ".platform" {
+                                # Analyze platform metadata
+                                if ($jsonContent.metadata) {
+                                    $metadata = $jsonContent.metadata
+                                    if ($metadata.type) {
+                                        $summaryInfo["Item Type"] = $metadata.type
+                                    }
+                                    if ($metadata.displayName) {
+                                        $summaryInfo["Display Name"] = $metadata.displayName
+                                    }
+                                    if ($metadata.description) {
+                                        $summaryInfo["Description"] = $metadata.description
+                                    }
+                                }
+                                if ($jsonContent.config -and $jsonContent.config.version) {
+                                    $summaryInfo["Config Version"] = $jsonContent.config.version
                                 }
                             }
                             default {
@@ -436,17 +466,17 @@ function Get-EventstreamDefinition {
             }
         }
         
-        Write-Log "Successfully decoded eventstream definition"
+        Write-Log "Successfully decoded KQL dashboard definition"
         
         # Display summary
-        Write-Log "Eventstream definition summary:"
+        Write-Log "KQL dashboard definition summary:"
         foreach ($key in $summaryInfo.Keys) {
             Write-Log "  $key : $($summaryInfo[$key])"
         }
         
         # Save to files if folder path specified
         if ($FolderPath) {
-            Write-Log "Saving decoded eventstream definition files to: $FolderPath"
+            Write-Log "Saving decoded KQL dashboard definition files to: $FolderPath"
             
             # Create directory and replace if it exists
             if (Test-Path $FolderPath) {
@@ -457,7 +487,7 @@ function Get-EventstreamDefinition {
             
             # Save each part to a separate file
             foreach ($partPath in $decodedParts.Keys) {
-                $fileName = $partPath -replace '[\\/:*?"<>|]', '_'  # Replace invalid characters
+                $fileName = $partPath -replace '[\\/:*?"<>|]', '_'  # Replace invalid characters (but preserve dots)
                 $filePath = Join-Path $FolderPath $fileName
                 
                 try {
@@ -477,11 +507,11 @@ function Get-EventstreamDefinition {
                 }
             }
             
-            Write-Log "Eventstream definition files saved successfully"
+            Write-Log "KQL dashboard definition files saved successfully"
             
             # Tokenize the JSON files unless skipped
             if (-not $SkipTokenization) {
-                Invoke-JsonTokenization -FolderPath $FolderPath -SchemaType "Eventstream"
+                Invoke-JsonTokenization -FolderPath $FolderPath -SchemaType "RealTimeDashboard"
             }
         }
         
@@ -489,7 +519,7 @@ function Get-EventstreamDefinition {
         return $decodedParts
     }
     catch {
-        Write-Log "Failed to get eventstream definition: $($_.Exception.Message)" "ERROR"
+        Write-Log "Failed to get KQL dashboard definition: $($_.Exception.Message)" "ERROR"
         throw
     }
 }
@@ -499,45 +529,45 @@ try {
     # Calculate default folder path if not provided
     if (-not $FolderPath) {
         $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
-        # Script is located at infra\scripts\utils\Get-FabricEventstreamDefinition.ps1
+        # Script is located at infra\scripts\utils\Get-FabricRealTimeDashboardDefinition.ps1
         $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
-        $FolderPath = Join-Path $RepoRoot "src" | Join-Path -ChildPath "eventstream"
+        $FolderPath = Join-Path $RepoRoot "src" | Join-Path -ChildPath "realTimeDashboard"
         Write-Log "Using default folder path: $FolderPath"
     }
     
-    Write-Log "Starting Fabric Eventstream Definition retrieval"
+    Write-Log "Starting Fabric Real Time Dashboard (KQL Dashboard) Definition retrieval"
     Write-Log "Workspace ID: $WorkspaceId"
-    Write-Log "Eventstream ID: $EventstreamId"
+    Write-Log "KQL Dashboard ID: $KqlDashboardId"
     Write-Log "Folder Path: $FolderPath"
     
     if ($Format) {
         Write-Log "Format: $Format"
     }
     
-    # Get and display eventstream definition
-    $eventstreamDefinition = Get-EventstreamDefinition
+    # Get and display KQL dashboard definition
+    $dashboardDefinition = Get-KqlDashboardDefinition
     
-    Write-Log "Eventstream definition retrieved successfully" 
+    Write-Log "KQL dashboard definition retrieved successfully" 
     
     # Display the decoded content
-    Write-Host "`n=== DECODED EVENTSTREAM DEFINITION PARTS ===" -ForegroundColor Green
+    Write-Host "`n=== DECODED KQL DASHBOARD DEFINITION PARTS ===" -ForegroundColor Green
     
-    foreach ($partPath in $eventstreamDefinition.Keys) {
+    foreach ($partPath in $dashboardDefinition.Keys) {
         Write-Host "`n--- PART: $partPath ---" -ForegroundColor Cyan
         
         # Try to format as JSON if possible
         try {
-            if ($partPath -like "*.json" -and -not $eventstreamDefinition[$partPath].StartsWith("[")) {
-                $jsonContent = $eventstreamDefinition[$partPath] | ConvertFrom-Json
+            if ($partPath -like "*.json" -and -not $dashboardDefinition[$partPath].StartsWith("[")) {
+                $jsonContent = $dashboardDefinition[$partPath] | ConvertFrom-Json
                 $jsonContent | ConvertTo-Json -Depth 10
             }
             else {
-                $eventstreamDefinition[$partPath]
+                $dashboardDefinition[$partPath]
             }
         }
         catch {
             # Display as-is if JSON parsing fails
-            $eventstreamDefinition[$partPath]
+            $dashboardDefinition[$partPath]
         }
     }
     

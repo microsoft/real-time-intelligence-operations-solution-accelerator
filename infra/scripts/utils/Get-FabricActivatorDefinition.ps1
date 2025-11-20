@@ -6,6 +6,7 @@
     This script retrieves and decodes Microsoft Fabric Activator (Reflex) definitions using the Fabric REST API.
     It handles Azure CLI authentication, makes the API request, and decodes the Base64 payload to provide
     readable activator configuration including entities, triggers, and other components.
+    By default, it also tokenizes the resulting JSON files using the Run-FabricJsonTokenizer.ps1 script.
 
 .PARAMETER WorkspaceId
     The workspace ID (GUID) containing the activator
@@ -14,10 +15,13 @@
     The activator (reflex) ID (GUID) to retrieve
 
 .PARAMETER FolderPath
-    Path to save the decoded definition files (defaults to "activator")
+    Path to save the decoded definition files (defaults to "src/activator" relative to repository root)
 
 .PARAMETER Format
     Optional format parameter for the activator definition (as supported by the API)
+
+.PARAMETER SkipTokenization
+    If specified, skips the automatic tokenization of JSON files after creation
 
 .EXAMPLE
     .\Get-FabricActivatorDefinition.ps1 -WorkspaceId "aaaabbbb-0000-cccc-1111-dddd2222eeee" -ReflexId "bbbbcccc-1111-dddd-2222-eeee3333ffff"
@@ -49,13 +53,16 @@ param(
     [string]$ReflexId,
     
     [Parameter(Mandatory = $false)]
-    [string]$FolderPath = "activator",
+    [string]$FolderPath = $null,
     
     [Parameter(Mandatory = $false)]
     [string]$Format,
 
     [Parameter(Mandatory = $false)]
-    [int]$TimeoutSeconds = 240
+    [int]$TimeoutSeconds = 240,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$SkipTokenization
 )
 
 # Global variables
@@ -262,6 +269,44 @@ function ConvertFrom-Base64 {
     }
 }
 
+function Invoke-JsonTokenization {
+    <#
+    .SYNOPSIS
+        Tokenize JSON files using the Run-FabricJsonTokenizer.ps1 script
+    #>
+    param(
+        [string]$FolderPath,
+        [string]$SchemaType
+    )
+    
+    try {
+        Write-Log "Starting JSON tokenization for schema type: $SchemaType in folder: $FolderPath"
+        
+        # Get the path to the tokenizer script
+        $tokenizerScript = Join-Path $PSScriptRoot "Run-FabricJsonTokenizer.ps1"
+        
+        if (-not (Test-Path $tokenizerScript)) {
+            Write-Log "Tokenizer script not found at: $tokenizerScript" "WARNING"
+            return
+        }
+        
+        if (-not (Test-Path $FolderPath)) {
+            Write-Log "Folder not found at: $FolderPath" "WARNING"
+            return
+        }
+        
+        # Let the tokenizer script find and process all appropriate files based on schema type
+        # This ensures both .json and .platform files are processed correctly
+        Write-Log "Running tokenizer for schema type: $SchemaType"
+        & $tokenizerScript -SchemaType $SchemaType
+        
+        Write-Log "JSON tokenization completed successfully"
+    }
+    catch {
+        Write-Log "Failed to tokenize JSON files: $($_.Exception.Message)" "WARNING"
+    }
+}
+
 function Get-ActivatorDefinition {
     <#
     .SYNOPSIS
@@ -425,6 +470,11 @@ function Get-ActivatorDefinition {
             }
             
             Write-Log "Activator definition files saved successfully"
+            
+            # Tokenize the JSON files unless skipped
+            if (-not $SkipTokenization) {
+                Invoke-JsonTokenization -FolderPath $FolderPath -SchemaType "Activator"
+            }
         }
         
         # Return the decoded parts
@@ -438,13 +488,19 @@ function Get-ActivatorDefinition {
 
 # Main execution
 try {
+    # Calculate default folder path if not provided
+    if (-not $FolderPath) {
+        $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+        # Script is located at infra\scripts\utils\Get-FabricActivatorDefinition.ps1
+        $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
+        $FolderPath = Join-Path $RepoRoot "src" | Join-Path -ChildPath "activator"
+        Write-Log "Using default folder path: $FolderPath"
+    }
+    
     Write-Log "Starting Fabric Activator (Reflex) Definition retrieval"
     Write-Log "Workspace ID: $WorkspaceId"
     Write-Log "Reflex ID: $ReflexId"
-    
-    if ($FolderPath) {
-        Write-Log "Folder Path: $FolderPath"
-    }
+    Write-Log "Folder Path: $FolderPath"
     
     if ($Format) {
         Write-Log "Format: $Format"

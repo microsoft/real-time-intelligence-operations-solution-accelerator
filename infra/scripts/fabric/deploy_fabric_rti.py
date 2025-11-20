@@ -13,8 +13,10 @@ Functions executed in order:
 4. load_data_to_fabric - Load sample data into Fabric
 5. setup_eventhub_connection - Configure Event Hub connection
 6. setup_real_time_dashboard - Create real-time dashboard in Fabric
-7. setup_eventstream - Create and configure Eventstream with Event Hub to Eventhouse flow
-8. setup_activator - Create and configure Activator (Reflex) for real-time alerts
+7. create_eventstream - Create Eventstream (empty)
+8. create_activator - Create Activator (empty)
+9. update_activator_definition - Configure Activator (Reflex) for real-time alerts
+10. update_eventstream_definition - Configure Eventstream with Event Hub to Eventhouse flow
 
 Usage:
     python deploy_fabric_rti.py
@@ -45,8 +47,10 @@ from fabric_database import setup_fabric_database
 from fabric_data_ingester import load_data_to_fabric
 from fabric_event_hub import setup_eventhub_connection
 from fabric_real_time_dashboard import setup_real_time_dashboard
-from fabric_eventstream import setup_eventstream
-from fabric_activator import setup_activator
+from fabric_eventstream import create_eventstream
+from fabric_activator import create_activator
+from fabric_eventstream_definition import update_eventstream_definition
+from fabric_activator_definition import update_activator_definition
 
 def execute_step(step_num: int, total_steps: int, description: str, func, **kwargs):
     """
@@ -146,7 +150,7 @@ def main():
     executed_steps = []
     
     workspace_result = execute_step(
-        1, 8, "Setting up Fabric workspace and capacity assignment",
+        1, 10, "Setting up Fabric workspace and capacity assignment",
         setup_workspace,
         capacity_name=capacity_name,
         workspace_name=workspace_name
@@ -155,12 +159,13 @@ def main():
         print_summary(executed_steps, failed_step="setup_workspace")
         sys.exit(1)
     executed_steps.append("setup_workspace")
+    workspace_id = workspace_result.get('id')
     
     eventhouse_result = execute_step(
-        2, 8, "Setting up Fabric Eventhouse",
+        2, 10, "Setting up Fabric Eventhouse",
         setup_eventhouse,
         eventhouse_name=eventhouse_name,
-        workspace_id=workspace_result.get('id'),
+        workspace_id=workspace_id,
         database_name=eventhouse_database_name
     )
     if eventhouse_result is None:
@@ -172,7 +177,7 @@ def main():
     eventhouse_database_id = eventhouse_result.get('properties').get('databasesItemIds')[0]
     
     result = execute_step(
-        3, 8, "Setting up Fabric database and table schemas",
+        3, 10, "Setting up Fabric database and table schemas",
         setup_fabric_database,
         cluster_uri=kusto_cluster_uri,
         database_name=eventhouse_database_name
@@ -183,7 +188,7 @@ def main():
     executed_steps.append("setup_fabric_database")
     
     result = execute_step(
-        4, 8, "Loading sample data into Fabric database",
+        4, 10, "Loading sample data into Fabric database",
         load_data_to_fabric,
         cluster_uri=kusto_cluster_uri,
         database_name=eventhouse_database_name,
@@ -197,7 +202,7 @@ def main():
     executed_steps.append("load_data_to_fabric")
     
     eventhub_connection_result = execute_step(
-        5, 8, "Setting up Event Hub connection",
+        5, 10, "Setting up Event Hub connection",
         setup_eventhub_connection,
         connection_name=event_hub_connection_name,
         namespace_name=event_hub_namespace_name,
@@ -215,12 +220,12 @@ def main():
     eventhub_connection_id = eventhub_connection_result.get('id') if eventhub_connection_result else None
 
     # Build dashboard file path relative to repository root
-    rti_dashboard_file_path = os.path.join(repo_dir, "src", "kql", "real_time_dashboard", "rti_dashboard.json")
+    rti_dashboard_file_path = os.path.join(repo_dir, "src", "realTimeDashboard", "RealTimeDashboard.json")
     
     dashboard_result = execute_step(
-        6, 8, "Setting up Real-time Dashboard",
+        6, 10, "Setting up Real-time Dashboard",
         setup_real_time_dashboard,
-        workspace_id=workspace_result.get('id'),
+        workspace_id=workspace_id,
         dashboard_title=dashboard_title,
         rti_dashboard_file_path=rti_dashboard_file_path,
         cluster_uri=kusto_cluster_uri,
@@ -231,46 +236,72 @@ def main():
         sys.exit(1)
     executed_steps.append("setup_real_time_dashboard")
 
+    eventstream_result = execute_step(
+        7, 10, "Creating Eventstream",
+        create_eventstream,
+        workspace_id=workspace_id,
+        eventstream_name=eventstream_name
+    )
+    if eventstream_result is None:
+        print_summary(executed_steps, failed_step="create_eventstream")
+        sys.exit(1)
+    executed_steps.append("create_eventstream")
+    eventstream_id = eventstream_result.get('id') if eventstream_result else None
+
+    activator_result = execute_step(
+        8, 10, "Creating Activator",
+        create_activator,
+        workspace_id=workspace_id,
+        activator_name=activator_name,
+        activator_description=f"Real-time alerts and notifications for {solution_name}"
+    )
+    if activator_result is None:
+        print_summary(executed_steps, failed_step="create_activator")
+        sys.exit(1)
+    executed_steps.append("create_activator")
+    activator_id = activator_result.get('id') if activator_result else None
+
+    # Build activator file path relative to repository root
+    activator_file_path = os.path.join(repo_dir, "src", "activator", "ReflexEntities.json")
+    
+    activator_definition_result = execute_step(
+        9, 10, "Updating Activator Definition",
+        update_activator_definition,
+        workspace_id=workspace_id,
+        activator_id=activator_id,
+        activator_file_path=activator_file_path,
+        eventstream_id=eventstream_id,
+        eventstream_name=eventstream_name,
+        activator_alerts_email=activator_alerts_email
+    )
+    if activator_definition_result is None:
+        print_summary(executed_steps, failed_step="update_activator_definition")
+        sys.exit(1)
+    executed_steps.append("update_activator_definition")
+
     # Build eventstream file path relative to repository root
     eventstream_file_path = os.path.join(repo_dir, "src", "eventstream", "eventstream.json")
     
-    eventstream_result = execute_step(
-        7, 8, "Setting up Eventstream",
-        setup_eventstream,
-        workspace_id=workspace_result.get('id'),
-        eventstream_name=eventstream_name,
+    eventstream_definition_result = execute_step(
+        10, 10, "Updating Eventstream Definition",
+        update_eventstream_definition,
+        workspace_id=workspace_id,
+        eventstream_id=eventstream_result.get('id') if eventstream_result else None,
         eventstream_file_path=eventstream_file_path,
         eventhouse_database_id=eventhouse_database_id,
         eventhouse_database_name=eventhouse_database_name,
         eventhouse_table_name="events",
         eventhub_connection_id=eventhub_connection_id,
-        source_name=f"src_rti_eventhub_{event_hub_name}",
-        destination_name=f"dst_rti_eventhouse_{eventhouse_name}",
-        stream_name=f"rti_eventhouse_stream_{solution_suffix}"
-    )
-    if eventstream_result is None:
-        print_summary(executed_steps, failed_step="setup_eventstream")
-        sys.exit(1)
-    executed_steps.append("setup_eventstream")
-
-    # Build activator file path relative to repository root
-    activator_file_path = os.path.join(repo_dir, "src", "activator", "ReflexEntities.json")
-    
-    activator_result = execute_step(
-        8, 8, "Setting up Activator",
-        setup_activator,
-        workspace_id=workspace_result.get('id'),
+        source_name=event_hub_name,
+        eventhouse_name=eventhouse_name,
+        stream_name=eventstream_name,
         activator_name=activator_name,
-        activator_file_path=activator_file_path,
-        activator_description=f"Real-time alerts and notifications for {solution_name}",
-        eventstream_id=eventstream_result.get('id'),
-        eventstream_name=eventstream_name,
-        activator_alerts_email=activator_alerts_email
+        activator_id=activator_id
     )
-    if activator_result is None:
-        print_summary(executed_steps, failed_step="setup_activator")
+    if eventstream_definition_result is None:
+        print_summary(executed_steps, failed_step="update_eventstream_definition")
         sys.exit(1)
-    executed_steps.append("setup_activator")
+    executed_steps.append("update_eventstream_definition")
     
     # Success!
     print(f"\n🎉 {solution_name} data initialization completed successfully!")
@@ -279,7 +310,7 @@ def main():
     print_summary(executed_steps)
 
     # Construct URLs for the resources
-    workspace_id = workspace_result.get('id')
+    workspace_id = workspace_id
     dashboard_id = dashboard_result.get('id') if dashboard_result else None
     eventstream_id = eventstream_result.get('id') if eventstream_result else None
     activator_id = activator_result.get('id') if activator_result else None

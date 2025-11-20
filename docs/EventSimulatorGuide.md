@@ -92,7 +92,7 @@ stop             # Stop simulation
 
 ### Normal Mode (Default)
 - Realistic operational sensor readings
-- Low defect probability (typically < 20%)
+- Low defect probability (typically < 2%)
 - Values within normal operating ranges
 
 ### Anomaly Mode

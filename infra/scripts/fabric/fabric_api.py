@@ -1656,6 +1656,56 @@ class FabricWorkspaceApiClient(FabricApiClient):
         self._log(f"Eventstream '{eventstream_name}' not found")
         return None
     
+    def get_eventstream_by_id(self, eventstream_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a specific eventstream by ID.
+        
+        Args:
+            eventstream_id: ID of the eventstream to retrieve
+            
+        Returns:
+            Eventstream object if found, None if not found
+            
+        Raises:
+            FabricApiError: If request fails (except for 404 Not Found)
+            
+        Required Scopes:
+            Eventstream.Read.All or Eventstream.ReadWrite.All or Item.Read.All or Item.ReadWrite.All
+            
+        Reference:
+            https://learn.microsoft.com/en-us/rest/api/fabric/eventstream/items/get-eventstream
+        """
+        if not eventstream_id or not eventstream_id.strip():
+            raise ValueError("eventstream_id is required and cannot be empty")
+        
+        eventstream_id = eventstream_id.strip()
+        self._log(f"Getting eventstream by ID: {eventstream_id}")
+        
+        try:
+            response = self._make_request(
+                f"workspaces/{self.workspace_id}/eventstreams/{eventstream_id}",
+                wait_for_lro=False  # GET requests don't need LRO waiting
+            )
+            
+            if response.status_code == 200:
+                eventstream = response.json()
+                self._log(f"Found eventstream '{eventstream.get('displayName', 'Unknown')}' (ID: {eventstream_id})")
+                return eventstream
+            elif response.status_code == 404:
+                self._log(f"Eventstream with ID '{eventstream_id}' not found")
+                return None
+            else:
+                raise FabricApiError(
+                    f"Failed to get eventstream {eventstream_id}: {response.status_code} - {response.text}",
+                    status_code=response.status_code,
+                    response_data=response.json() if response.content else None
+                )
+                
+        except FabricApiError:
+            raise
+        except Exception as e:
+            raise FabricApiError(f"Unexpected error getting eventstream {eventstream_id}: {str(e)}")
+    
     def create_eventstream(self,
                           display_name: str,
                           description: Optional[str] = None,
@@ -2413,6 +2463,56 @@ class FabricWorkspaceApiClient(FabricApiClient):
         except Exception as e:
             self._log(f"❌ Unexpected error searching for activator: {e}", level="ERROR")
             raise FabricApiError(f"Error searching for activator: {e}")
+    
+    def get_activator_by_id(self, activator_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a specific activator (reflex) by ID.
+        
+        Args:
+            activator_id: ID of the activator to retrieve
+            
+        Returns:
+            Activator object if found, None if not found
+            
+        Raises:
+            FabricApiError: If request fails (except for 404 Not Found)
+            
+        Required Scopes:
+            Reflex.Read.All or Reflex.ReadWrite.All or Item.Read.All or Item.ReadWrite.All
+            
+        Reference:
+            https://learn.microsoft.com/en-us/rest/api/fabric/reflex/items/get-reflex
+        """
+        if not activator_id or not activator_id.strip():
+            raise ValueError("activator_id is required and cannot be empty")
+        
+        activator_id = activator_id.strip()
+        self._log(f"Getting activator by ID: {activator_id}")
+        
+        try:
+            response = self._make_request(
+                f"workspaces/{self.workspace_id}/reflexes/{activator_id}",
+                wait_for_lro=False  # GET requests don't need LRO waiting
+            )
+            
+            if response.status_code == 200:
+                activator = response.json()
+                self._log(f"Found activator '{activator.get('displayName', 'Unknown')}' (ID: {activator_id})")
+                return activator
+            elif response.status_code == 404:
+                self._log(f"Activator with ID '{activator_id}' not found")
+                return None
+            else:
+                raise FabricApiError(
+                    f"Failed to get activator {activator_id}: {response.status_code} - {response.text}",
+                    status_code=response.status_code,
+                    response_data=response.json() if response.content else None
+                )
+                
+        except FabricApiError:
+            raise
+        except Exception as e:
+            raise FabricApiError(f"Unexpected error getting activator {activator_id}: {str(e)}")
     
     def delete_activator(self, activator_id: str) -> bool:
         """

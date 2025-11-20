@@ -2,10 +2,10 @@
   "sources": [
     {
       "id": "57d2b18f-f4e0-4162-b78f-a599a9dfc645",
-      "name": "src_rti_eventhub_evhaghrtisayqkc7",
+      "name": "__TOKEN_name_1__",
       "type": "AzureEventHub",
       "properties": {
-        "dataConnectionId": "651e95d4-f2e5-4587-a3df-c4cc9dfd0c08",
+        "dataConnectionId": "3e968408-e9c0-466d-9577-1bb9f6f270a3",
         "consumerGroupName": "$Default",
         "inputSerialization": {
           "type": "Json",
@@ -19,13 +19,13 @@
   "destinations": [
     {
       "id": "176127cd-845e-41e4-9766-2dc4648e558e",
-      "name": "dst_rti_eventhouse_rti_eventhouse_aghrtisaaghrtisayqkc7",
+      "name": "__TOKEN_name_2__",
       "type": "Eventhouse",
       "properties": {
         "dataIngestionMode": "ProcessedIngestion",
-        "workspaceId": "8e9e84e6-cd82-462f-8fe7-92df311ee5f4",
-        "itemId": "ebc4a92e-4159-4a3f-8605-dfa7de46a8c3",
-        "databaseName": "rti_kqldb_aghrtisaaghrtisayqkc7",
+        "workspaceId": "__TOKEN_workspaceId_1__",
+        "itemId": "d032514a-dc48-4347-b476-ce71f9aa7597",
+        "databaseName": "__TOKEN_databaseName_1__",
         "tableName": "events",
         "inputSerialization": {
           "type": "Json",
@@ -36,12 +36,12 @@
       },
       "inputNodes": [
         {
-          "name": "rti_eventhouse_stream_aghrtisayqkc7"
+          "name": "__TOKEN_name_3__"
         }
       ],
       "inputSchemas": [
         {
-          "name": "rti_eventhouse_stream_aghrtisayqkc7",
+          "name": "__TOKEN_name_3__",
           "schema": {
             "columns": [
               {
@@ -58,6 +58,12 @@
               },
               {
                 "name": "ProductId",
+                "type": "Nvarchar(max)",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "Timestamp",
                 "type": "Nvarchar(max)",
                 "fields": null,
                 "items": null
@@ -94,12 +100,131 @@
               },
               {
                 "name": "DefectProbability",
-                "type": "Float",
+                "type": "BigInt",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "EventProcessedUtcTime",
+                "type": "DateTime",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "PartitionId",
+                "type": "BigInt",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "EventEnqueuedUtcTime",
+                "type": "DateTime",
+                "fields": null,
+                "items": null
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "1cacff84-7bc4-41bf-a3f9-772685a299fa",
+      "name": "__TOKEN_name_4__",
+      "type": "Activator",
+      "properties": {
+        "workspaceId": "__TOKEN_workspaceId_1__",
+        "itemId": "faa642de-9491-4b43-98f7-7889cc03b822",
+        "inputSerialization": {
+          "type": "Json",
+          "properties": {
+            "encoding": "UTF8"
+          }
+        }
+      },
+      "inputNodes": [
+        {
+          "name": "__TOKEN_name_3__"
+        }
+      ],
+      "inputSchemas": [
+        {
+          "name": "__TOKEN_name_3__",
+          "schema": {
+            "columns": [
+              {
+                "name": "Id",
+                "type": "Nvarchar(max)",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "AssetId",
+                "type": "Nvarchar(max)",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "ProductId",
+                "type": "Nvarchar(max)",
                 "fields": null,
                 "items": null
               },
               {
                 "name": "Timestamp",
+                "type": "Nvarchar(max)",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "BatchId",
+                "type": "Nvarchar(max)",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "Vibration",
+                "type": "Float",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "Temperature",
+                "type": "Float",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "Humidity",
+                "type": "Float",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "Speed",
+                "type": "Float",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "DefectProbability",
+                "type": "BigInt",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "EventProcessedUtcTime",
+                "type": "DateTime",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "PartitionId",
+                "type": "BigInt",
+                "fields": null,
+                "items": null
+              },
+              {
+                "name": "EventEnqueuedUtcTime",
                 "type": "DateTime",
                 "fields": null,
                 "items": null
@@ -113,12 +238,12 @@
   "streams": [
     {
       "id": "b3ddf29b-7151-42b6-b668-9bdef6be5b24",
-      "name": "rti_eventhouse_stream_aghrtisayqkc7",
+      "name": "__TOKEN_name_3__",
       "type": "DefaultStream",
       "properties": {},
       "inputNodes": [
         {
-          "name": "src_rti_eventhub_evhaghrtisayqkc7"
+          "name": "__TOKEN_name_1__"
         }
       ]
     }
