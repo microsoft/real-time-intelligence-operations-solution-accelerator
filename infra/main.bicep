@@ -37,9 +37,6 @@ param fabricAdminMembers array = []
 @description('Optional. SKU tier of the Fabric resource.')
 param skuName string = 'F2'
 
-@description('Required. TEMPORARY PARAM FOR DEVELOPMENT. Whether to deploy the Fabric Capacity resource.')
-param deployCapacity bool = true
-
 @description('Specifies the object id of a Microsoft Entra ID user to allow Event Hub data access for event simulation. This is typically the object id of the system administrator who deploys the Azure resources. Defaults to the deploying user.')
 param userObjectId string = deployer().objectId
 
@@ -68,10 +65,7 @@ var allTags = union(
 resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = {
   name: 'default'
   properties: {
-    tags: union(
-      reference(resourceGroup().id, '2021-04-01', 'Full').?tags ?? {},
-      allTags
-    )
+    tags: union(reference(resourceGroup().id, '2021-04-01', 'Full').?tags ?? {}, allTags)
   }
 }
 
@@ -92,7 +86,7 @@ module eventHubNamespace 'br/public:avm/res/event-hub/namespace:0.13.0' = {
         messageRetentionInDays: 1
       }
     ]
-    roleAssignments:[
+    roleAssignments: [
       {
         roleDefinitionIdOrName: 'Azure Event Hubs Data Sender'
         principalId: userObjectId
@@ -103,17 +97,13 @@ module eventHubNamespace 'br/public:avm/res/event-hub/namespace:0.13.0' = {
   }
 }
 
-// name for the already provisioned dev/testing capacity to use for dev
-// this is temporary - remove after initial development/testing is complete
-var tempDevCapacityName = 'fabriccapcitydevw3' 
-
 var fabricCapacityResourceName = 'fc${solutionSuffix}'
 var fabricCapacityDefaultAdmins = deployer().?userPrincipalName == null
   ? [deployer().objectId]
   : [deployer().userPrincipalName]
 var fabricTotalAdminMembers = union(fabricCapacityDefaultAdmins, fabricAdminMembers)
 
-module fabricCapacity 'br/public:avm/res/fabric/capacity:0.1.2' = if (deployCapacity) {
+module fabricCapacity 'br/public:avm/res/fabric/capacity:0.1.2' = {
   name: take('avm.res.fabric.capacity.${fabricCapacityResourceName}', 64)
   params: {
     name: fabricCapacityResourceName
@@ -132,7 +122,7 @@ output AZURE_RESOURCE_GROUP string = resourceGroup().name
 
 @description('The name of the Fabric capacity resource')
 #disable-next-line BCP318
-output AZURE_FABRIC_CAPACITY_NAME string = deployCapacity ? fabricCapacity.outputs.name : tempDevCapacityName
+output AZURE_FABRIC_CAPACITY_NAME string = fabricCapacity.outputs.name
 
 @description('The identities added as Fabric Capacity Admin members')
 output AZURE_FABRIC_ADMIN_MEMBERS array = fabricTotalAdminMembers

@@ -55,29 +55,27 @@ If you'd like to customize the solution accelerator, here are some common areas 
 <details open>
   <summary>Click to learn more about the key features this solution enables</summary>
 
+
+
+  - **Fabric Data Ingestion Program** <br/>The data ingestion program ingests data in a batch operation that can fill in 90 days of historical data, replace existing data, or generates historical data for specified period. For information on how to use it, please refer to [Fabric Data Ingestion Guide](./docs/FabricDataIngestion.md).
+
   - **Real Time Event Simulator** <br/>The real time event simulator is a practical data simulator that is used to simulate the manufacturing sensor data. It provides a data driver for the solution accelerator. For information how to use it, please refer to [Event Simulator Guide](./docs/EventSimulatorGuide.md).
 
-  - **Fabric Data Ingestion Program** <br/>The data ingestion program ingests data in a batch operation that can fill in 90 days of historical data, replace existing data, or generates historical data for specified period. For information on how to use it, please refer to [Fabric Data Ingestion Program Guide](./docs/FabricDataIngester.md).
+  - **Real Time Intelligence Operations Dashboard** <br/>Real-Time Intelligence Operations Dashboard provides overview on how manufacturing assets are performing, and showing individual sensor data trends such as Speed, Vibration, Temperature, Humidity, and Defect Probability. It also shows daily anomaly rates for monitored assets. For details, please refer to [Real Time Intelligence Dashboard Guide](./docs/RealTimeIntelligenceDashboardGuide.md).
 
   - **Fabric Eventhouse with Customized Fabric Data Agent**
 
     Fabric evenhouse with an event database hosting simulated manufacturing telemetry data, stored in the `events` table, and related dimension tables such as `locations`, `sites`, `assets`, and `products`.  The deployment process creates 90 days of historical data with dates backtracked from the moment of deployment. After deployment, you can use the Fabric data Ingestion Program to refresh historic data, and the Real Time Event Simulator to send real time telemetry data to the deployed Event Hub, which sends to Fabric Event Stream which stores the real time telemetry data to the same `events` table. 
 
-    A Fabric Data Agent can be created with the necessary configurations. Please refer to [Fabric Data Agent Guide](./FabricDataAgentGuide.md) for details. Once created and configured, the Fabric Data Agent will be able to answer business questions by getting insights from the data stored in the EventHouse component. 
+    A Fabric Data Agent can be created with the necessary configurations. Please refer to [Fabric Data Agent Guide](./docs/FabricDataAgentGuide.md) for details. Once created and configured, the Fabric Data Agent will be able to answer business questions by getting insights from the data stored in the EventHouse component. 
 
-  - **Real Time Intelligence Operations Dashboard** <br/>
-
-    Real-Time Intelligence Operations Dashboard provides overview on how manufacturing assets are performing, and showing individual sensor data trends such as Speed, Vibration, Temperature, Humidity, and Defect Probability. It also shows daily anomaly rates for monitored assets. For details, please refer to [Real Time Dashboard Guide](./docs/RealTimeDashboardDetailsGuide.md).
-
-  - **Fabric Activator** <br/>
-
-    Microsoft Activator is another key solution element that has configured anomaly detection rules. The rules are set to send outlook email notifications when an anomaly occurs with the detailed sensor data. It can also be easily configured to send the same information to a specified Teams channel. For more details, please refer to [Activator Guide](./docs/ActivatorGuide.md).
+  - **Anomaly Detection and Alerts through Fabric Activator** <br/>Microsoft Activator is another key solution element that has configured anomaly detection rules. The rules are set to send outlook email notifications when an anomaly occurs with the detailed sensor data. It can also be easily configured to send the same information to a specified Teams channel. For more details, please refer to [Activator Guide](./docs/ActivatorGuide.md).
 
   - **Useful Data Analysis KQL Code** <br/>We used comprehensive data analysis KQL code to get insights from the data sets utilized. This provides a base to develop additional features for the solution. The code with documentation is provided to help users to get a quick start on data analysis. For more details please refer to [Data Analysis KQL Guide](./src/kql/data_analysis/data_analysis_guide.md). 
 
-  - **Useful Performance Metrics KQL Code** <br/>
+  - **Useful Performance Metrics KQL Code** <br/>A group of useful data analysis and performance metrics tracking KQL query sets are provided. These query sets can be used to develop additional dashboard tiles. For more information, please refer to [Performance Metrics KQL Queryset Guide](./src/kql/kql_queryset/kql_queryset_guide.md). 
 
-  - A group of useful data analysis and performance metrics tracking KQL query sets are provided. These query sets can be used to develop additional dashboard tiles. For more information, please refer to [Performance Metrics KQL Queryset Guide](./src/kql/kql_queryset/kql_queryset_guide.md). 
+  - **Demonstrator's Guide** <br/> After successful deployment of the solution accelerator, you or your colleague who has required access can demonstrate this solution by following the steps outlined in the [Demonstrator's Guide](./docs/DemonstratorGuide.md).
 
 </details>
 
@@ -90,11 +88,57 @@ Quick deploy
 </h2>
 
 ### How to install or deploy
-Please follow the quick deploy steps in [deployment guide](./docs/DeploymentGuide.md).
+
+Follow these steps to deploy the solution to your own Azure subscription:
+
+| [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Open in Visual Studio Code Web](https://img.shields.io/static/v1?style=for-the-badge&label=Visual%20Studio%20Code%20(Web)&message=Open&color=blue&logo=visualstudiocode&logoColor=white)](https://vscode.dev/github/microsoft/real-time-intelligence-operations-solution-accelerator) |
+|---|---|---|
+
 <br/>
 
+**One-command deployment** - Deploy everything with [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd):
+
+```bash
+# Clone and navigate to repository
+git clone https://github.com/microsoft/real-time-intelligence-operations-solution-accelerator.git
+cd real-time-intelligence-operations-solution-accelerator
+
+# Authenticate (required)
+azd auth login
+az login
+
+# Recommended: set email to recieve alerts
+azd env set FABRIC_ACTIVATOR_ALERTS_EMAIL "myteam@company.com"
+
+# Optional: Customize resource names
+azd env set FABRIC_WORKSPACE_NAME "My RTI Workspace"
+azd env set FABRIC_EVENTHOUSE_NAME "my_custom_eventhouse"
+azd env set FABRIC_EVENTHOUSE_DATABASE_NAME "my_custom_kql_db"
+azd env set FABRIC_EVENT_HUB_CONNECTION_NAME "my_eventhub_connection"
+azd env set FABRIC_RTIDASHBOARD_NAME "My Custom Dashboard"
+azd env set FABRIC_EVENTSTREAM_NAME "my_custom_eventstream"
+azd env set FABRIC_ACTIVATOR_NAME "my_custom_activator"
+
+# Deploy everything
+azd up
+```
+<br/>
+
+Check more deployment aspects in our [deployment guide](./docs/DeploymentGuide.md):
+
+| Topic | Description |
+|---|---|
+| [**Prerequisites**](./docs/DeploymentGuide.md#prerequisites) | Required Azure permissions, API access, and software installations (Python, Azure CLI, azd) |
+| [**Event Simulation**](./docs/DeploymentGuide.md#start-event-simulation) | Once deployed, generate real-time telemetry data and test anomaly detection with the event simulator tool |
+| [**Deployment validation**](./docs/DeploymentGuide.md#deployment-results) | Once deployed, verify Azure infrastructure, Fabric workspace components, and real-time data flow |
+| [**Deployment overview**](./docs/DeploymentGuide.md#deployment-overview) | Two-phase deployment process: Azure infrastructure provisioning and Fabric workspace setup |
+| [**Advanced configuration**](./docs/DeploymentGuide.md#advanced-configuration-options) | Customize workspace names, component names, email alerts, and capacity deployment options |
+| [**Alternative deployment options**](./docs/DeploymentGuide.md#deployment-options) | Deploy locally, Azure Cloud Shell, GitHub Codespaces, or VS Code Dev Container |
+| [**Limitations**](./docs/DeploymentGuide.md#known-limitations) | See identified limitations of the solution |
+| [**Cleanup**](./docs/DeploymentGuide.md#environment-cleanup) | Remove all deployed resources and clean up your environment with `azd down` |
+
 ### Prerequisites and costs
-You have followed the provisioning guidance pages for [Provisioning Fabric](./docs/SetupFabric.md). 
+Microsoft Fabric Capacity is enabled for your organization. Please refer to [Enable Microsoft Fabric for your organization](https://learn.microsoft.com/en-us/fabric/admin/fabric-switch) for more information. 
 
 To deploy this solution accelerator, ensure you have access to an [Azure subscription](https://azure.microsoft.com/free/) with the necessary permissions to create **resource groups, resources, app registrations, and assign roles at the resource group level**. This should include Contributor role at the subscription level and Role Based Access Control role on the subscription and/or resource group level. Follow the steps in [Azure Account Set Up](./docs/AzureAccountSetUp.md).
 
@@ -122,13 +166,13 @@ Business use case
 </h2>
 Use cases can be summarized as below:
 
-- For manufacturing plants, the plant manager or other business stakeholders can use the Fabric Data Agent to get business and operations intelligence quickly without the need to write database query code. For details, please refer to [Fabric Data Agent Guide](./docs/FabricDataAgentGuide.md) for details. 
+- For manufacturing plants, the plant manager or other business stakeholders can use the Fabric Data Agent to get business and operations intelligence quickly without the need to understand or create query code. For details, please refer to [Fabric Data Agent Guide](./docs/FabricDataAgentGuide.md) for details. 
 
 - For manufacturing plants, the designated operations team receives email notification when anomaly occurs. The solution can also be configured to send anomaly notifications to a Teams Channel. Please refer to [Activator Guide](./docs/ActivatorGuide.md) for rules configuration options (Email or Teams).
 
 - Plant manager uses real-time dashboard to analyze manufacturing plant asset performance, key telemetry data over time, with specified time periods such as last hour, last 12 hours, last 3 days, etc. 
 
-  The image below shows the first page of the real-time intelligence operations dashboard, which displays sensor status, quality metrics, and individual sensor data trends. The second page shows additional information such as daily anomaly rate by asset, asset maintenance status, and fault correlations.  Please refer to [Real Time Intelligence Operations Dashboard Guide](./docs/RealTimeDashboardDetailsGuide.md) for more details. 
+  The image below shows the first page of the real-time intelligence operations dashboard, which displays sensor status, quality metrics, and individual sensor data trends. The second page shows additional information such as daily anomaly rate by asset, asset maintenance status, and fault correlations.  Please refer to [Real Time Intelligence Operations Dashboard Guide](./docs/RealTimeIntelligenceDashboardGuide.md) for more details. 
 
 | ![image](./docs/images/readme/rti-dashboard.png) |
 | ------------------------------------------------ |

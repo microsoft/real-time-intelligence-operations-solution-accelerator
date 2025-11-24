@@ -1,4 +1,4 @@
-# Deployment Guide for Real-Time Intelligence (RTI) with Fabric
+# Deployment Guide for Real-Time Intelligence (RTI) Operations 
 
 Deploy the **Real-Time Intelligence Data Platform** solution accelerator using Azure Developer CLI - get a complete real-time analytics platform with Event Hub, Fabric Eventhouse, and KQL dashboards in minutes.
 
@@ -45,7 +45,6 @@ During deployment, you'll specify:
 - **See all available deployment options**: See [Deployment Options](#deployment-options) (Cloud Shell, Codespaces, etc.)
 - **Troubleshoot issues**: Review [Known Limitations](#known-limitations) for common problems and solutions
 - **Remove environment**: Use [Environment Cleanup](#environment-cleanup) to completely remove your deployment
-- **Need help**: Check [Additional Resources](#additional-resources) for documentation and support
 
 ---
 
@@ -56,9 +55,9 @@ Before starting, ensure your deployment identity has the following requirements.
 > **📋 Deployment Identity Types**
 > 
 > The deployment can be executed using different identity types:
-> - **User Account**: Interactive deployment using your Azure AD credentials
-> - **Service Principal**: Application identity for automated/CI-CD scenarios  
-> - **Managed Identity**: Azure-managed identity for secure automated deployments
+> - **User Account**: Interactive deployment using your Azure AD credentials.
+> - **Service Principal**: Application identity for automated/CI-CD scenarios.
+> - **Managed Identity**: Azure-managed identity for secure automated deployments.
 >
 > For more details, see [Fabric Identity Support](https://learn.microsoft.com/rest/api/fabric/articles/identity-support)
 
@@ -68,8 +67,6 @@ Before starting, ensure your deployment identity has the following requirements.
 - [ ] **`Microsoft.EventHub` Resource Provider Access**: Verify your Azure Subscription has Event Hub resource provider enabled
 
 ### 🔗 API Permissions
-- [ ] **Microsoft Graph API - `User.Read`**: Delegated permission to read signed-in user profile information
-- [ ] **Microsoft Graph API - `openid`**: Delegated permission for sign in and user profile authentication
 - [ ] **Fabric REST API - Workspace Management**: Access to create and manage Fabric workspaces
 - [ ] **Fabric REST API - Item Creation**: Access to create Eventhouses, KQL databases, and dashboards
 - [ ] **Azure Event Hubs API**: Access to create and manage Event Hub resources
@@ -119,7 +116,7 @@ The deployment orchestration coordinates both phases through Azure Developer CLI
 
 ## Deployment Results
 
-After successful deployment, you'll have a complete real-time analytics platform.
+After successful deployment, you'll have a complete real-time operations platform set in Fabric and Azure, with all the elements listed below:
 
 ### Azure Infrastructure
 
@@ -127,13 +124,16 @@ After successful deployment, you'll have a complete real-time analytics platform
 |----------|---------|
 | **[Fabric Capacity](https://learn.microsoft.com/fabric/admin/capacity-settings?tabs=power-bi-premium)** | Dedicated compute for Fabric workloads |
 | **[Azure Event Hub](https://learn.microsoft.com/azure/event-hubs/)** | Real-time event ingestion service |
-| **[Managed Identity](https://learn.microsoft.com/entra/identity/managed-identities-azure-resources/overview)** | Secure authentication for automated operations |
+
+![Screenshot of Azure portal showing the Azure resources deployed after the script execution](./images/deployment/deployment_overview_azure.png)
 
 ### Fabric Components
 
 #### Fabric Workspace
 
 Workspace created with the specified or default name: `Real-Time Intelligence for Operations - <your azd env name><suffix>`. The workspace is automatically assigned to the specified Fabric capacity and configured with proper permissions.
+
+![Screenshot of Fabric workspace showing the Fabric items deployed after the script execution](./images/deployment/deployment_overview_fabric_workspace.png)
 
 #### Eventhouse and KQL Database
 
@@ -143,37 +143,12 @@ Workspace created with the specified or default name: `Real-Time Intelligence fo
 | **KQL Database** | High-performance analytics database | Named `rti_kqldb_<env-name><suffix>` with configured tables and schema |
 | **Events Table** | Real-time event data storage | Primary table for streaming event ingestion with proper indexing |
 
-#### Event Hub Connection
+**Eventhouse**
+![Screenshot of Fabric eventhouse deployed after the script execution](./images/deployment/deployment_overview_fabric_eventhouse.png)
 
-| Component | Purpose | Details |
-|-----------|---------|---------|
-| **Connection** | Secure Event Hub to Eventhouse link | Named `rti_eventhub_connection_<env-name><suffix>` using SAS token authentication |
-| **Authorization** | Access control for data streaming | Configured with Event Hub authorization rules and primary access key |
+<br/>
 
-#### Real-Time Dashboard
-
-| Component | Purpose | Details |
-|-----------|---------|---------|
-| **KQL Dashboard** | Real-time monitoring and visualization | Named `rti_dashboard_<env-name><suffix>` with pre-configured charts and metrics |
-| **Data Source** | Connected to Eventhouse database | Automatically linked to KQL database for live data visualization |
-
-#### Eventstream
-
-| Component | Purpose | Details |
-|-----------|---------|---------|
-| **Eventstream** | Data flow orchestration | Named `rti_eventstream_<env-name><suffix>` connecting Event Hub to Eventhouse |
-| **Source** | Event Hub input connector | Named `src_rti_eventhub_<event-hub-name>` for real-time data ingestion |
-| **Destination** | Eventhouse output connector | Named `dst_rti_eventhouse_<eventhouse-name>` targeting events table |
-| **Stream Processing** | Data transformation pipeline | Named `rti_eventhouse_stream_<suffix>` for event processing and routing |
-
-#### Activator (Real-Time Alerts)
-
-| Component | Purpose | Details |
-|-----------|---------|---------|
-| **Activator** | Real-time alerting and notifications | Named `rti_activator_<env-name><suffix>` for automated anomaly detection |
-| **Event Source** | Eventstream data monitoring | Monitors data flow from `src_rti_eventhub_<event-hub-name>` |
-| **Alert Rules** | Automated notification triggers | Pre-configured rules for speed anomalies (>85 or <35) |
-| **Email Notifications** | Real-time alert delivery | Configured email alerts for detected anomalies |
+![Screenshot of Fabric KQL database deployed after the script execution](./images/deployment/deployment_overview_fabric_kql_database.png)
 
 #### Sample Data
 
@@ -182,102 +157,53 @@ The solution includes comprehensive sample data for real-time analytics scenario
 - **Event data**: Real-time operational events with timestamps and metadata
 - **Location data**: Asset locations and geographical information
 - **Historical data**: Pre-loaded datasets for testing and demonstration purposes
-- **Data refresh**: Automatically updates event dates to current timeframe for realistic testing
 
-#### Real-Time Alerting
+#### Event Hub Connection
 
-The Activator component provides intelligent real-time monitoring and automated alerting:
-- **Speed Anomaly Detection**: Automatically detects when asset speeds exceed safe thresholds
-  - **High Speed Alert**: Triggers when speed > 85 (equipment overspeed condition)
-  - **Low Speed Alert**: Triggers when speed < 35 (potential equipment failure)
-- **Email Notifications**: Sends detailed email alerts with asset information and context
-- **Event-Driven Processing**: Monitors the live data stream for immediate response
-- **Configurable Rules**: Pre-configured alert rules that can be customized for specific operational requirements
+| Component | Purpose | Details |
+|-----------|---------|---------|
+| **Connection** | Secure Event Hub to Eventhouse link | Named `rti_eventhub_connection_<env-name><suffix>` using SAS token authentication |
 
-### Deployment Verification
+![Screenshot of Fabric Eventhub connection deployed after the script execution](./images/deployment/deployment_overview_fabric_eventhub_connection.png)
 
-After deployment completion, verify that all components are working correctly.
+#### Real-Time Dashboard
 
-#### 🏗️ Azure Portal Verification
+| Component | Purpose | Details |
+|-----------|---------|---------|
+| **KQL Dashboard** | Real-time monitoring and visualization | Named `rti_dashboard_<env-name><suffix>` with pre-configured charts and metrics |
+| **Data Source** | Connected to Eventhouse database | Automatically linked to KQL database for live data visualization |
 
-**Check Azure Resources**:
-1. **Resource Group**: Navigate to the created Resource Group (default: `rg-<your azd env name>`)
-2. **Resources**: Verify these components exist:
-   - **Event Hub Namespace**: Real-time event ingestion service
-   - **Fabric Capacity**: Dedicated compute for analytics workloads
-   - **Managed Identity**: Secure authentication component
+![Screenshot of Fabric Real-Time dashboard deployed after the script execution](./images/deployment/deployment_overview_fabric_real-time_dashboard.png)
 
-#### 🎯 Fabric Workspace Verification
+#### Activator (Real-Time Alerts)
 
-**Check Fabric Components**:
-1. **Workspace**: Navigate to your workspace (default: `Real-Time Intelligence for Operations - <your azd env name><suffix>`)
-   - Verify workspace is assigned to the specified Fabric capacity
-   - Check workspace permissions and admin access
-2. **Eventhouse**: Verify the Eventhouse is created (default: `rti_eventhouse_<env-name><suffix>`)
-   - Confirm Eventhouse status is running
-   - Verify query service URI is accessible
-3. **KQL Database**: Check the database exists (default: `rti_kqldb_<env-name><suffix>`)
-   - Verify database tables exist with proper schema
-   - **Events table**: Primary event data storage with proper indexing
-   - Confirm database connection and query capabilities
-4. **Sample Data**: Verify data loading completed successfully
-   - Check asset telemetry data is loaded
-   - Verify event data with updated timestamps
-   - Confirm location and historical data presence
-   - Test data refresh functionality (dates updated to current timeframe)
-5. **Event Hub Connection**: Go to **Settings > Manage connections and gateways**
-   - Verify connection exists (default: `rti_eventhub_connection_<env-name><suffix>`)
-   - Check SAS token authentication is configured
-   - Confirm connection status is active
-6. **Real-Time Dashboard**: Navigate to **Dashboards** section
-   - Verify dashboard exists (default: `rti_dashboard_<env-name><suffix>`)
-   - Check dashboard is linked to KQL database
-   - Confirm pre-configured charts and metrics are visible
-7. **Eventstream**: Navigate to **Real-Time hub** or **Eventstreams** section
-   - Verify Eventstream exists (default: `rti_eventstream_<env-name><suffix>`)
-   - Check source connector (default: `src_rti_eventhub_<event-hub-name>`)
-   - Verify destination connector (default: `dst_rti_eventhouse_<eventhouse-name>`)
-   - Confirm stream processing pipeline (default: `rti_eventhouse_stream_<suffix>`)
-   - Check Eventstream is published and running
-8. **Activator**: Navigate to **Real-Time hub** or **Activator** section
-   - Verify Activator exists (default: `rti_activator_<env-name><suffix>`)
-   - Check event source connection to Eventstream
-   - Verify alert rules are configured (speed anomaly detection)
-   - Confirm email notification settings
-   - Check Activator is active and monitoring
+| Component | Purpose | Details |
+|-----------|---------|---------|
+| **Activator** | Real-time alerting and notifications | Named `rti_activator_<env-name><suffix>` for automated anomaly detection |
+| **Event Source** | Eventstream data monitoring | Monitors data flow from EventStream source |
+| **Alert Rules** | Automated notification triggers | Pre-configured rules: High Speed (>100), Low Speed (<28), High Vibration (>0.4), High Defect Probability (>0.02) |
+| **Email Notifications** | Real-time alert delivery | Configured email alerts with detailed asset information and contextual data |
 
-#### 📊 Real-Time Data Flow Verification
+**Activator**
 
-**Test Data Streaming** (after completing [Post-Deployment Steps](#post-deployment-steps)):
+![Screenshot of Fabric Activator deployed after the script execution](./images/deployment/deployment_overview_fabric_activator.png)
 
-1. **Simulation Status**:
-   - Verify event simulation is running in your terminal
-   - Check simulation logs for successful event generation
+<br/>
 
-2. **Data Ingestion**:
-   - Query the Events table using KQL to verify new data arrival:
-   ```kusto
-   Events
-   | where ingestion_time() > ago(5m)
-   | take 10
-   ```
+**Rules**
 
-3. **Anomaly Detection**:
-   - Trigger anomaly events in the simulation (speed values >85 or <35)
-   - Query for anomaly records in the Events table
-   - Verify anomaly detection rules are functioning
-   - Check email notifications are received for triggered alerts
+![Screenshot of Fabric Activator rules deployed after the script execution](./images/deployment/deployment_overview_fabric_activator_rules.png)
 
-#### 🚨 Troubleshooting Common Issues
+#### Eventstream
 
-| Issue | Symptom | Solution |
-|-------|---------|----------|
-| **No data flowing** | Events table remains empty | Check Eventstream is published and running |
-| **Connection errors** | Event Hub connection fails | Verify connection string and permissions |
-| **Simulation not running** | No events generated | Review [Event Simulator Guide](EventSimulatorGuide.md) |
-| **KQL queries fail** | Database connection errors | Verify Eventhouse is running and accessible |
-| **No alerts received** | Activator not sending emails | Check Activator is active and email settings are configured |
-| **Alert rules not triggering** | No notifications for anomalies | Verify speed thresholds (>85 or <35) and event source connection |
+| Component | Purpose | Details |
+|-----------|---------|---------|
+| **Eventstream** | Data flow orchestration | Named `rti_eventstream_<env-name><suffix>` connecting Event Hub to Eventhouse |
+| **Source** | Event Hub input connector | EventStream source for real-time data ingestion from Azure Event Hub |
+| **Destination** | Eventhouse output connector | Connected to Eventhouse for streaming data into KQL database |
+| **Event Processing** | Real-time data processing | Processes telemetry data including AssetId, Speed, Vibration, Temperature, Humidity, and DefectProbability |
+
+![Screenshot of Fabric Eventstream deployed after the script execution](./images/deployment/deployment_overview_fabric_eventstream.png)
 
 ---
 
@@ -359,7 +285,6 @@ The solution accelerator provides flexible configuration options to customize yo
 | **Eventstream Name** | `FABRIC_EVENTSTREAM_NAME` | Name for the Fabric Eventstream | `rti_eventstream_<env-name><suffix>` | `"my_custom_eventstream"` |
 | **Activator Name** | `FABRIC_ACTIVATOR_NAME` | Name for the real-time alerting Activator | `rti_activator_<env-name><suffix>` | `"my_custom_activator"` |
 | **Activator Alerts Email** | `FABRIC_ACTIVATOR_ALERTS_EMAIL` | Email address for Activator alert notifications | `alerts@contoso.com` | `"myteam@company.com"` |
-| **Deploy Fabric Capacity** | `AZURE_DEPLOY_FABRIC_CAPACITY` | Whether to deploy new Fabric capacity | `true` | `false` (for testing) |
 
 #### Automatically Managed Environment Variables
 
@@ -368,13 +293,12 @@ These variables are automatically set by the deployment process (Bicep outputs) 
 | Environment Variable | Description | Source |
 |---------------------|-------------|--------|
 | `AZURE_ENV_NAME` | Environment name (used in resource naming) | Azure Developer CLI |
-| `SOLUTION_SUFFIX` | Suffix appended to resource names | Azure Developer CLI |
 | `AZURE_SUBSCRIPTION_ID` | Azure subscription ID | Azure Developer CLI |
 | `AZURE_RESOURCE_GROUP` | Azure resource group name | Azure Developer CLI |
 | `AZURE_FABRIC_CAPACITY_NAME` | Name of the Fabric capacity | Bicep template output |
 | `AZURE_EVENT_HUB_NAME` | Event Hub name | Bicep template output |
 | `AZURE_EVENT_HUB_NAMESPACE_NAME` | Event Hub namespace name | Bicep template output |
-| `AZURE_EVENT_HUB_AUTHORIZATION_RULE_NAME` | Event Hub authorization rule name | Bicep template output (defaults to "RootManageSharedAccessKey") |
+| `SOLUTION_SUFFIX` | Suffix appended to resource names | Azure Developer CLI |
 
 **Configuration Examples:**
 
@@ -439,17 +363,3 @@ cd data_maag_rti
 # Remove everything deployed by azd up
 azd down --force --purge
 ```
-
----
-
-## Additional Resources
-
-- **Documentation**: [Microsoft Fabric Real-Time Intelligence](https://learn.microsoft.com/fabric/real-time-intelligence/) | [Azure Event Hubs](https://learn.microsoft.com/azure/event-hubs/) | [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
-- **Guides**: [Event Simulator Documentation](EventSimulatorGuide.md) | [FAQs](FAQs.md) 
-- **Sample Data**: [Data Generation Scripts](../infra/scripts/sample_data.py) | [Sample Data Location](../infra/data/)
-
-For support, visit the project repository or engage with the Microsoft Fabric community.
-
----
-
-

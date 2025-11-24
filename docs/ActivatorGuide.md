@@ -1,4 +1,4 @@
-# Activator Set Up Guide
+# Activator Anomaly Rules and Operations Guide
 
 Please follow [Activator Rules Setup Guide](https://learn.microsoft.com/en-us/fabric/real-time-intelligence/data-activator/activator-tutorial) for details if you are new to Activator. 
 
@@ -27,6 +27,16 @@ Please note the activator deployed has action type set to Outlook email. You can
 ![Activator Rule Example](../docs/images/deployment/activator-rule-example-teams.png)
 
 
+
+## Anomaly Event Alerts
+
+ If the simulator is in normal mode, you will rarely receive anomaly events as things should be running much smoother during normal mode. When an anomaly is detected, the Activator will send alert notifications to specified emails, as illustrated in below email inbox.
+
+![Anomaly Alert](../docs/images/deployment/anomaly-email-alerts.png)
+
+When you open one of the emails, you will see something similar to below:
+
+![Activator Email Alert](../docs/images/deployment/activator-email-alert.png)
 
 ## Activator Rules Configuration Guide 
 

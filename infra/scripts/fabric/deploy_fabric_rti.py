@@ -310,7 +310,6 @@ def main():
     print_summary(executed_steps)
 
     # Construct URLs for the resources
-    workspace_id = workspace_id
     dashboard_id = dashboard_result.get('id') if dashboard_result else None
     eventstream_id = eventstream_result.get('id') if eventstream_result else None
     activator_id = activator_result.get('id') if activator_result else None
@@ -322,7 +321,7 @@ def main():
     eventhouse_url = f"https://app.fabric.microsoft.com/groups/{workspace_id}/eventhouses/{eventhouse_id}?experience=fabric-developer" if eventhouse_id else None
     kql_database_url = f"https://app.fabric.microsoft.com/groups/{workspace_id}/databases/{eventhouse_database_id}?experience=fabric-developer" if eventhouse_database_id else None
     dashboard_url = f"https://app.fabric.microsoft.com/groups/{workspace_id}/kustodashboards/{dashboard_id}?experience=fabric-developer" if dashboard_id else None
-    eventstream_url = f"https://app.fabric.microsoft.com/groups/{workspace_id}/eventstream/item/{eventstream_id}?experience=fabric-developer" if eventstream_id else None
+    eventstream_url = f"https://app.fabric.microsoft.com/groups/{workspace_id}/eventstreams/{eventstream_id}?experience=fabric-developer" if eventstream_id else None
     activator_url = f"https://app.fabric.microsoft.com/groups/{workspace_id}/reflexes/{activator_id}?experience=fabric-developer" if activator_id else None
     eventhub_connection_url = f"https://app.fabric.microsoft.com/groups/{workspace_id}/gateways?experience=fabric-developer"
     eventhub_namespace_url = f"https://portal.azure.com/#@/resource/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.EventHub/namespaces/{event_hub_namespace_name}/overview"

@@ -1,4 +1,4 @@
-# Fabric Data Ingester
+# Fabric Data Ingestion Guide
 
 Loads CSV data into Microsoft Fabric database tables using Azure authentication. This document provides guidance on calling the fabric_data_ingester.py script directly to refresh the sample data (including events) within the KQL database in your Fabric workspace. Execute this script to also refresh the historical event data (via the `--refresh-dates` argument) to match up to today's current date and time to ensure the dashboard displays more recent past results. 
 
@@ -16,7 +16,7 @@ pip install azure-identity azure-kusto-data azure-kusto-ingest pandas
 
 In order to ingest data into the Fabric Workspace, the executing identity will need sufficient permissions to the Workspace. Ensure the identity is assigned [Contributor rights on the Fabric Workspace](https://learn.microsoft.com/en-us/fabric/fundamentals/give-access-workspaces).
 
-The required `CLUSTER_URI` and `DATABASE_NAME` can be retrieved from Fabric. While in Fabric, navigate to the Eventhouse to find the KQL Database to get the `DATABASE_NAME`. Select the database and on the right side there will be a `Query Uri` or `Injest Uri` link/button. Selecting either will copy the required `CLUSTER_URI` value to the clipboard. Supply these values in the command below.
+The required `CLUSTER_URI` and `DATABASE_NAME` can be retrieved from Fabric. While in Fabric, navigate to the EventHouse to find the KQL Database to get the `DATABASE_NAME`. Select the database and on the right side there will be a `Query Uri` or `Injest Uri` link/button. Selecting either will copy the required `CLUSTER_URI` value to the clipboard. Supply these values in the command below.
 
 ## Usage
 

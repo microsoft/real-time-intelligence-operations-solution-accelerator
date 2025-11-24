@@ -64,7 +64,7 @@ events
     AvgTemp = round(avg(Temperature), 1),
     AvgVibration = round(avg(Vibration), 3),
     AvgDefectRate = round(avg(DefectProbability) * 100, 1)
-    by Shift
+    by Shift, AssetName
 | extend 
     AnomalyRate = round(AnomalyEvents * 100.0 / TotalEvents, 1),
     SpeedIssueRate = round(SpeedIssues * 100.0 / TotalEvents, 1),
@@ -78,11 +78,10 @@ events
     )
 | project 
     ["Shift"] = Shift,
-    //["Asset"] = AssetName,
+    ["Asset"] = AssetName,
     ["Status"] = Performance,
     ["Anomaly Rate %"] = AnomalyRate,
     ["Events"] = TotalEvents
-
 | order by Shift asc 
 | render table
     with (

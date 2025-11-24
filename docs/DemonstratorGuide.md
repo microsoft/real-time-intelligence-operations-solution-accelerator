@@ -10,14 +10,14 @@ If you deployed the solution accelerator via AZD following the [Deployment Guide
 
 If you are using a demonstration environment already set up by someone else, you will need below accesses: 
 
-1. You will need to be added as a contributor/viewer of the Fabric workspace. If you are a viewer, you will not be able to update any resources such as [Real-Time Intelligence Operations Dashboard](./RealTimeDashboardDetailsGuide.md) or [Activator](./ActivatorGuide.md). If you are a contributor, you will be able to update all the resources in Fabric workspace. **Recommend role: Viewer**. 
+1. You will need to be added as a contributor/viewer of the Fabric workspace. If you are a viewer, you will not be able to update any resources such as [Real-Time Intelligence Operations Dashboard](./RealTimeIntelligenceDashboardGuide.md) or [Activator](./ActivatorGuide.md). If you are a contributor, you will be able to update all the resources in Fabric workspace. **Recommend role: Viewer**. 
 2. You will need to be able to send simulated events to the Azure Event Hub deployed with the solution. The owner of the Event Hub or your Azure Admin can add you to the role of Azure Event Hubs Data Sender. Below diagram illustrates the key steps. 
 
 ![Event Hubs Data Sender Role](../docs/images/deployment/eventhubs-data-sender-role.png)
 
 ## Step 1. Refresh Historical Data 
 
-When the solution accelerator was deployed, it automatically creates 90 days of telemetry data and stores the data in the EventHouse database. By the time you demonstrate this solution, the data needs to be refreshed. You will need to follow instructions in [Fabric Data Ingestion Guide](./FabricDataIngestion.md) and use the options `--refresh-dates` and `--overwrite`.
+When the solution accelerator was deployed, it automatically creates 90 days of telemetry data and stores the data in the EventHouse database. By the time you demonstrate this solution, the data needs to be refreshed. You will need to follow instructions in [Fabric Data Ingestion Guide](./FabricDataIngestion.md) and use the options `--refresh-dates` and `--overwrite` to get a fresh and up to date dataset. 
 
 ## Step 2. Start Real Time Event Simulator 
 
@@ -25,7 +25,7 @@ You will need to start the Real-Time Event Simulator by following the instructio
 
 ## Step 3. Demonstrate the Real-Time Intelligence Operations Dashboard 
 
-Please follow the [Real-Time Intelligence Operations Dashboard Guide](./RealTimeDashboardDetailsGuide.md) to understand the concepts and business metrics. You will want to highlight the anomaly spikes as shown in below diagram. Suggest you select time range filter as last 2 days or last 24 hours depending on when you started the anomaly event simulation. 
+Please follow the [Real-Time Intelligence Operations Dashboard Guide](./RealTimeIntelligenceDashboardGuide.md) to understand the concepts and business metrics. You will want to highlight the anomaly spikes as shown in below diagram. Suggest you select time range filter as last 2 days or last 24 hours depending on when you started the anomaly event simulation. 
 
 ![RTI Dashboard Anomaly Spikes](../docs/images/deployment/rti-dashboard-anomaly-spikes.png)
 
