@@ -7,10 +7,10 @@ in the correct order, with proper error handling and logging. It uses environmen
 variables for configuration and calls each function directly.
 
 Functions executed in order:
-1. fabric_rti_authenticate - Authenticate Fabric API client
-2. fabric_rti_lookup_workspace - Look up workspace by name
-3. fabric_rti_delete_connection - Delete Event Hub connection
-4. fabric_rti_delete_workspace - Delete the Fabric workspace
+1. authenticate - Authenticate Fabric API client
+2. lookup_workspace - Look up workspace by name
+3. delete_connection - Delete Event Hub connection
+4. delete_workspace - Delete the Fabric workspace
 
 Usage:
     python remove_fabric_rti.py
@@ -30,40 +30,10 @@ from datetime import datetime
 sys.path.append(os.path.dirname(__file__))
 
 # Import removal functions
-from fabric_rti_helper import fabric_rti_authenticate, fabric_rti_lookup_workspace, fabric_rti_delete_connection, fabric_rti_delete_workspace, get_required_env_var
-
-def print_summary(solution_name: str, solution_suffix: str, removal_results: dict, failed_steps: list = None):
-    """Print final removal summary."""
-    any_failures = bool(failed_steps)
-    status_icon = "⚠️" if any_failures else "🎉"
-    status_text = "REMOVAL COMPLETED WITH WARNINGS" if any_failures else "REMOVAL COMPLETE"
-    
-    print(f"\n" + "="*60)
-    print(f"{status_icon} {solution_name.upper()} {status_text}!")
-    print(f"="*60)
-    print(f"📅 Completed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"🏷️  Solution: {solution_suffix}")
-    
-    # Count successful removals
-    removed_items = [item for item, success in removal_results.items() if success]
-    failed_items = [item for item, success in removal_results.items() if not success]
-    
-    if removed_items:
-        print(f"\n✅ SUCCESSFULLY REMOVED:")
-        for item in removed_items:
-            print(f"   🗑️ {item}")
-    
-    if failed_items:
-        print(f"\n❌ FAILED TO REMOVE:")
-        for item in failed_items:
-            print(f"   ⚠️ {item}")
-    
-    if not any_failures:
-        print(f"\n✨ All targeted resources have been successfully removed!")
-    else:
-        print(f"\n💡 Some items could not be removed. Please check the warnings above.")
-        print(f"   You may need to manually remove failed items or re-run the script.")
-    print(f"="*60)
+from fabric_auth import authenticate
+from fabric_workspace_delete import lookup_workspace, delete_workspace
+from fabric_connection_delete import delete_connection
+from fabric_common_utils import get_required_env_var, print_step, print_steps_summary
 
 def main():
     # Calculate repository root directory (3 levels up from this script)
@@ -87,79 +57,71 @@ def main():
     
     executed_steps = []
     failed_steps = []
-    removal_results = {
-        'Connection': False,
-        'Workspace': False
-    }
     
     # Step 1: Authenticate Fabric API client
-    fabric_client = fabric_rti_authenticate(step_num=1, total_steps=4)
+    print_step(1, 4, "Authenticating Fabric API client")
+    fabric_client = authenticate()
     if fabric_client is None:
         print(f"\n❌ Authentication failed. Cannot proceed with workspace removal.")
+        failed_steps.append("authenticate")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, failed_steps)
         sys.exit(1)
-    executed_steps.append("fabric_rti_authenticate")
+    executed_steps.append("authenticate")
     
     # Step 2: Look up workspace by name
-    lookup_result = fabric_rti_lookup_workspace(
+    print_step(2, 4, "Looking up workspace", workspace_name=workspace_name)
+    lookup_result = lookup_workspace(
         fabric_client,
-        step_num=2, total_steps=4,
         workspace_name=workspace_name
     )
     if lookup_result is None:
         print("⚠️ Warning: Could not find workspace. Continuing with connection cleanup...")
-        failed_steps.append("fabric_rti_lookup_workspace")
+        failed_steps.append("lookup_workspace")
         workspace_id = None
-        workspace_display_name = workspace_name
     else:
-        executed_steps.append("fabric_rti_lookup_workspace")
+        executed_steps.append("lookup_workspace")
         workspace_id, workspace_display_name = lookup_result
     
     # Step 3: Delete Event Hub connection
+    print_step(3, 4, "Deleting Event Hub connection", connection_name=connection_name)
     try:
-        connection_result = fabric_rti_delete_connection(
+        connection_result = delete_connection(
             fabric_client,
-            step_num=3, total_steps=4,
             connection_name=connection_name
         )
         if connection_result is not None:
             print(f"Connection deleted successfully: {connection_result}")
-            executed_steps.append("fabric_rti_delete_connection")
-            removal_results['Connection'] = True
+            executed_steps.append("delete_connection")
         else:
             print("⚠️ Warning: Connection not found, nothing to delete.")
-            executed_steps.append("fabric_rti_delete_connection")
-            removal_results['Connection'] = False
+            executed_steps.append("delete_connection")
     except Exception as e:
         print(f"⚠️ Warning: Could not delete connection: {e}. Continuing with workspace deletion...")
-        failed_steps.append("fabric_rti_delete_connection")
-        removal_results['Connection'] = False
+        failed_steps.append("delete_connection")
     
     # Step 4: Delete workspace (only if we found it)
     if workspace_id:
+        print_step(4, 4, "Deleting workspace", workspace_id=workspace_id)
         try:
-            result = fabric_rti_delete_workspace(
+            result = delete_workspace(
                 fabric_client,
-                step_num=4, total_steps=4,
                 workspace_id=workspace_id
             )
             if result is not None:
                 print(f"Workspace deleted successfully: {result}")
-                executed_steps.append("fabric_rti_delete_workspace")
-                removal_results['Workspace'] = True
+                executed_steps.append("delete_workspace")
             else:
                 print("⚠️ Warning: Workspace not found during deletion, nothing to delete.")
-                executed_steps.append("fabric_rti_delete_workspace")
-                removal_results['Workspace'] = True
+                executed_steps.append("delete_workspace")
         except Exception as e:
             print(f"⚠️ Warning: Could not delete workspace: {e}")
-            failed_steps.append("fabric_rti_delete_workspace")
-            removal_results['Workspace'] = False
+            failed_steps.append("delete_workspace")
     else:
         print("⚠️ Skipping workspace deletion (workspace not found)")
-        removal_results['Workspace'] = False
+        failed_steps.append("lookup_workspace")
     
     # Print final summary
-    print_summary(solution_name, solution_suffix, removal_results, failed_steps)
+    print_steps_summary(solution_name, solution_suffix, executed_steps, failed_steps)
 
 if __name__ == "__main__":
     try:
