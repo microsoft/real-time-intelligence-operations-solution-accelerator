@@ -21,7 +21,7 @@ import base64
 import json
 import os
 import sys
-from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
 def setup_real_time_dashboard(workspace_id: str,
                               dashboard_title: str,
@@ -159,10 +159,13 @@ Examples:
     args = parser.parse_args()
     
     # Execute the main logic
+    fabric_client = FabricApiClient()
+    
     result = setup_real_time_dashboard(
+        fabric_client=fabric_client,
         workspace_id=args.workspace_id,
         dashboard_title=args.dashboard_title,
-        rti_dashboard_file_path=args.dashboard_file,
+        rti_dashboard_file_path=args.rti_dashboard_file_path,
         cluster_uri=args.cluster_uri,
         eventhouse_database_id=args.eventhouse_database_id
     )

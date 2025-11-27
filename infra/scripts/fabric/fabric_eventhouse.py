@@ -20,7 +20,7 @@ import os
 import sys
 import time
 from typing import Optional, Dict, Any
-from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
 
 def _rename_default_database(workspace_client: FabricWorkspaceApiClient, 
@@ -88,13 +88,15 @@ def _rename_default_database(workspace_client: FabricWorkspaceApiClient,
     return False
 
 
-def setup_eventhouse(workspace_id: str, 
+def setup_eventhouse(fabric_client: FabricApiClient,
+                    workspace_id: str, 
                     eventhouse_name: str,
                     database_name: Optional[str] = None) -> object:
     """
     Set up an Eventhouse in the specified workspace.
     
     Args:
+        fabric_client: Authenticated FabricApiClient instance (passed but not used - using workspace client)
         workspace_id: ID of the target workspace
         eventhouse_name: Name of the Eventhouse to create
         database_name: Optional name for the default database. If provided, 
@@ -193,7 +195,10 @@ Examples:
     args = parser.parse_args()
     
     # Execute the main logic
+    fabric_client = FabricApiClient()
+    
     result = setup_eventhouse(
+        fabric_client=fabric_client,
         workspace_id=args.workspace_id,
         eventhouse_name=args.eventhouse_name,
         database_name=args.database_name

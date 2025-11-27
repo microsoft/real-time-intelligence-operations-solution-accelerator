@@ -146,6 +146,7 @@ def get_event_hub_namespace_primary_key(namespace_name: str, subscription_id: st
 
 
 def setup_eventhub_connection(
+    fabric_client: FabricApiClient,
     connection_name: str,
     namespace_name: str,
     event_hub_name: str,
@@ -163,6 +164,7 @@ def setup_eventhub_connection(
     with the new parameters. Otherwise, a new connection will be created.
     
     Args:
+        fabric_client: Authenticated FabricApiClient instance
         connection_name: Display name for the connection
         namespace_name: Event Hub namespace name
         event_hub_name: Event Hub name
@@ -188,7 +190,8 @@ def setup_eventhub_connection(
         access_key = key_info['primary_key']
         print(f"✅ Successfully retrieved access key")
         
-        client = FabricApiClient()
+        # Use the passed fabric_client instead of creating a new one
+        client = fabric_client
 
         connections = client.list_connections()
 
@@ -286,7 +289,10 @@ Examples:
     args = parser.parse_args()
     
     # Execute the main logic
+    fabric_client = FabricApiClient()
+    
     result = setup_eventhub_connection(
+        fabric_client=fabric_client,
         connection_name=args.connection_name,
         namespace_name=args.namespace_name,
         event_hub_name=args.event_hub_name,
@@ -301,41 +307,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-    EVENT_HUB_NAMESPACE = "<your-namespace>"
-    EVENT_HUB_NAME = "<your-event-hub-name>"
-    SUBSCRIPTION_ID = "<your-subscription-id>"
-    RESOURCE_GROUP_NAME = "<your-resource-group>"
-    AUTHORIZATION_RULE_NAME = "<your-authorization-rule-name>" # RootManageSharedAccessKey
-    
-    try:
-        print("Setting up Event Hub connection in Microsoft Fabric...")
-        print("="*60)
-        
-        # Example: Setup connection with automatic key retrieval
-        print("Setting up Event Hub connection with automatic key retrieval...")
-        result = setup_eventhub_connection(
-            connection_name=CONNECTION_NAME,
-            namespace_name=EVENT_HUB_NAMESPACE,
-            event_hub_name=EVENT_HUB_NAME,
-            subscription_id=SUBSCRIPTION_ID,
-            resource_group_name=RESOURCE_GROUP_NAME,
-            authorization_rule_name=AUTHORIZATION_RULE_NAME
-        )
-        
-        # Example: Just get the keys without setting up Fabric connection
-        print("\nAdditionally, showing key retrieval...")
-        keys = get_event_hub_namespace_primary_key(
-            namespace_name=EVENT_HUB_NAMESPACE,
-            subscription_id=SUBSCRIPTION_ID,
-            resource_group_name=RESOURCE_GROUP_NAME
-        )
-        
-        print(f"\n✅ Event Hub connection setup complete.")
-        print(f"Connection ID: {result.get('id')}")
-        print(f"Connection Name: {result.get('displayName')}")
-        print(f"Primary Key: {keys['primary_key'][:10]}...")  # Show only first 10 chars for security
-        print(f"Key Name: {keys['key_name']}")
-        
-    except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
-        sys.exit(1)

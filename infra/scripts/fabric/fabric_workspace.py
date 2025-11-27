@@ -19,11 +19,12 @@ import argparse
 import sys
 from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
-def setup_workspace(capacity_name: str, workspace_name: str) -> object:
+def setup_workspace(fabric_client: FabricApiClient, capacity_name: str, workspace_name: str) -> object:
     """
     Create a workspace (if it doesn't exist) and assign it to the specified capacity.
     
     Args:
+        fabric_client: Authenticated FabricApiClient instance
         capacity_name: Name of the capacity to assign the workspace to
         workspace_name: Name of the workspace to create
         
@@ -31,10 +32,6 @@ def setup_workspace(capacity_name: str, workspace_name: str) -> object:
         True if successful, False otherwise
     """
     try:
-        # Initialize the Fabric API client
-        print("🚀 Initializing Fabric API client...")
-        fabric_client = FabricApiClient()
-        
         print(f"🔍 Searching for capacity: '{capacity_name}'")
 
         capacity = fabric_client.get_capacity(capacity_name)
@@ -134,7 +131,10 @@ Examples:
     args = parser.parse_args()
     
     # Execute the main logic
+    fabric_client = FabricApiClient()
+    
     result = setup_workspace(
+        fabric_client=fabric_client,
         capacity_name=args.capacity_name,
         workspace_name=args.workspace_name
     )

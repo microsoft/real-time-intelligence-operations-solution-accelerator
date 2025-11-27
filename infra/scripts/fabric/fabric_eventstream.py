@@ -17,7 +17,7 @@ Requirements:
 
 import argparse
 import sys
-from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
 def create_eventstream(workspace_id: str,
                       eventstream_name: str = "rti_eventstream"):
@@ -106,7 +106,10 @@ Examples:
     args = parser.parse_args()
     
     # Execute the main logic
+    fabric_client = FabricApiClient()
+    
     result = create_eventstream(
+        fabric_client=fabric_client,
         workspace_id=args.workspace_id,
         eventstream_name=args.eventstream_name
     )

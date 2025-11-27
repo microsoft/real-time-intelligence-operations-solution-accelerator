@@ -41,6 +41,7 @@ from datetime import datetime
 sys.path.append(os.path.dirname(__file__))
 
 # Import pipeline functions
+from fabric_auth import authenticate
 from fabric_workspace import setup_workspace
 from fabric_eventhouse import setup_eventhouse  
 from fabric_database import setup_fabric_database
@@ -92,12 +93,21 @@ def main():
     print(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*60)
     
+    # Authenticate Fabric API client once
+    print("\n🔐 Authenticating Fabric API client...")
+    fabric_client = authenticate()
+    if not fabric_client:
+        print("❌ Failed to authenticate with Fabric APIs")
+        sys.exit(1)
+    print("✅ Authentication successful")
+    
     executed_steps = []
     
     # Step 1: Setup workspace
     print_step(1, 10, "Setting up Fabric workspace and capacity assignment", capacity_name=capacity_name, workspace_name=workspace_name)
     try:
         workspace_result = setup_workspace(
+            fabric_client=fabric_client,
             capacity_name=capacity_name,
             workspace_name=workspace_name
         )
@@ -116,6 +126,7 @@ def main():
     print_step(2, 10, "Setting up Fabric Eventhouse", eventhouse_name=eventhouse_name, workspace_id=workspace_id, database_name=eventhouse_database_name)
     try:
         eventhouse_result = setup_eventhouse(
+            fabric_client=fabric_client,
             eventhouse_name=eventhouse_name,
             workspace_id=workspace_id,
             database_name=eventhouse_database_name
@@ -175,6 +186,7 @@ def main():
     print_step(5, 10, "Setting up Event Hub connection", connection_name=event_hub_connection_name, namespace_name=event_hub_namespace_name, event_hub_name=event_hub_name)
     try:
         eventhub_connection_result = setup_eventhub_connection(
+            fabric_client=fabric_client,
             connection_name=event_hub_connection_name,
             namespace_name=event_hub_namespace_name,
             event_hub_name=event_hub_name,
@@ -202,6 +214,7 @@ def main():
     print_step(6, 10, "Setting up Real-time Dashboard", workspace_id=workspace_id, dashboard_title=dashboard_title, cluster_uri=kusto_cluster_uri)
     try:
         dashboard_result = setup_real_time_dashboard(
+            fabric_client=fabric_client,
             workspace_id=workspace_id,
             dashboard_title=dashboard_title,
             rti_dashboard_file_path=rti_dashboard_file_path,
@@ -222,6 +235,7 @@ def main():
     print_step(7, 10, "Creating Eventstream", workspace_id=workspace_id, eventstream_name=eventstream_name)
     try:
         eventstream_result = create_eventstream(
+            fabric_client=fabric_client,
             workspace_id=workspace_id,
             eventstream_name=eventstream_name
         )
@@ -240,6 +254,7 @@ def main():
     print_step(8, 10, "Creating Activator", workspace_id=workspace_id, activator_name=activator_name)
     try:
         activator_result = create_activator(
+            fabric_client=fabric_client,
             workspace_id=workspace_id,
             activator_name=activator_name,
             activator_description=f"Real-time alerts and notifications for {solution_name}"
@@ -262,6 +277,7 @@ def main():
     print_step(9, 10, "Updating Activator Definition", workspace_id=workspace_id, activator_id=activator_id, eventstream_name=eventstream_name)
     try:
         activator_definition_result = update_activator_definition(
+            fabric_client=fabric_client,
             workspace_id=workspace_id,
             activator_id=activator_id,
             activator_file_path=activator_file_path,
@@ -286,6 +302,7 @@ def main():
     print_step(10, 10, "Updating Eventstream Definition", workspace_id=workspace_id, eventstream_id=eventstream_id, eventhouse_database_name=eventhouse_database_name)
     try:
         eventstream_definition_result = update_eventstream_definition(
+            fabric_client=fabric_client,
             workspace_id=workspace_id,
             eventstream_id=eventstream_result.get('id') if eventstream_result else None,
             eventstream_file_path=eventstream_file_path,

@@ -27,7 +27,7 @@ import re
 import sys
 from typing import Dict, Any, Optional
 
-from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
 def transform_activator_config(activator_config: list,
                               eventstream_id: str = None,
@@ -260,10 +260,13 @@ Examples:
     args = parser.parse_args()
     
     # Execute the main logic
+    fabric_client = FabricApiClient()
+    
     result = update_activator_definition(
+        fabric_client=fabric_client,
         workspace_id=args.workspace_id,
         activator_id=args.activator_id,
-        activator_file_path=args.activator_file,
+        activator_file_path=args.activator_file_path,
         eventstream_id=args.eventstream_id,
         eventstream_name=args.eventstream_name,
         activator_alerts_email=args.activator_alerts_email

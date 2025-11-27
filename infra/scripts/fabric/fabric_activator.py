@@ -20,7 +20,7 @@ import sys
 import argparse
 from typing import Optional
 
-from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
 def create_activator(workspace_id: str,
                     activator_name: str = "rti_activator",
@@ -116,7 +116,10 @@ Examples:
     args = parser.parse_args()
     
     # Execute the main logic
+    fabric_client = FabricApiClient()
+    
     result = create_activator(
+        fabric_client=fabric_client,
         workspace_id=args.workspace_id,
         activator_name=args.activator_name,
         activator_description=args.activator_description
