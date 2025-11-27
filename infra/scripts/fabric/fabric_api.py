@@ -28,6 +28,7 @@ import requests
 from datetime import datetime
 from typing import Dict, List, Optional, Union, Any
 from azure.identity import AzureCliCredential, DefaultAzureCredential
+from azure.storage.filedatalake import DataLakeServiceClient, FileSystemClient
 
 class FabricApiError(Exception):
     """Custom exception for Fabric API errors."""
@@ -86,6 +87,50 @@ class FabricApiClient:
         minutes = int(elapsed_seconds // 60)
         seconds = int(elapsed_seconds % 60)
         return f"{minutes}m {seconds}s"
+    
+    def start_long_running_operation(self,
+                                   uri: str,
+                                   method: str = "POST",
+                                   data: Optional[Union[str, dict]] = None,
+                                   headers: Optional[Dict[str, str]] = None,
+                                   timeout: Optional[int] = None) -> requests.Response:
+        """
+        Start a long-running operation without waiting for completion.
+        
+        Args:
+            uri: API endpoint URI (relative to base URL)
+            method: HTTP method
+            data: Request body data
+            headers: Additional headers
+            timeout: Request timeout
+            
+        Returns:
+            Response object (typically 202 with Location header)
+        """
+        return self._make_request(uri, method, data, headers, timeout, wait_for_lro=False)
+    
+    def get_headers(self) -> Dict[str, str]:
+        """
+        Get HTTP headers for API requests.
+        
+        Returns:
+            Dictionary with Authorization header
+        """
+        return {"Authorization": f"Bearer {self._get_auth_token()}"}
+    
+    def get_workspace_file_system_client(self, workspace_name: str) -> FileSystemClient:
+        """
+        Create a Data Lake file system client for a Fabric workspace.
+        
+        Args:
+            workspace_name: Name of the Fabric workspace
+            
+        Returns:
+            FileSystemClient for OneLake operations
+        """
+        account_url = "https://onelake.dfs.fabric.microsoft.com"
+        service_client = DataLakeServiceClient(account_url, credential=self._credential)
+        return service_client.get_file_system_client(file_system=workspace_name)
     
     def _get_auth_token(self) -> str:
         """
@@ -391,6 +436,9 @@ class FabricApiClient:
         workspaces = self.get_workspaces()
         workspace = next((w for w in workspaces if w['displayName'].lower() == workspace_name.lower()), None)
         
+        if not workspace:
+            raise FabricApiError(f"Workspace '{workspace_name}' not found")
+        
         return workspace
     
     def create_workspace(self, name: str, capacity_id: Optional[str] = None) -> str:
@@ -410,6 +458,234 @@ class FabricApiClient:
         
         response = self._make_request("workspaces", method="POST", data=data)
         return response.json()['id']
+    
+    def assign_workspace_to_capacity(self, workspace_id: str, capacity_id: str) -> None:
+        """
+        Assign a workspace to a capacity.
+        
+        Args:
+            workspace_id: ID of the workspace
+            capacity_id: ID of the capacity
+            
+        Raises:
+            FabricApiError: If assignment fails
+        """
+        self._log(f"Assigning workspace {workspace_id} to capacity {capacity_id}")
+        
+        data = {"capacityId": capacity_id}
+        response = self._make_request(
+            f"workspaces/{workspace_id}/assignToCapacity", 
+            method="POST", 
+            data=data
+        )
+        
+        if response.status_code in [200, 202]:
+            self._log(f"Successfully assigned workspace to capacity")
+        else:
+            raise FabricApiError(f"Failed to assign workspace to capacity: {response.status_code}")
+    
+    def delete_workspace(self, workspace_id: str) -> None:
+        """
+        Delete a workspace.
+        
+        Args:
+            workspace_id: ID of the workspace to delete
+            
+        Raises:
+            FabricApiError: If deletion fails
+        """
+        self._log(f"Deleting workspace {workspace_id}")
+        
+        response = self._make_request(f"workspaces/{workspace_id}", method="DELETE")
+        
+        if response.status_code == 200:
+            self._log(f"Successfully deleted workspace")
+        else:
+            raise FabricApiError(f"Failed to delete workspace: {response.status_code}")
+    
+    def add_workspace_role_assignment(self, 
+                                    workspace_id: str, 
+                                    principal_id: str, 
+                                    principal_type: str, 
+                                    role: str,
+                                    display_name: Optional[str] = None,
+                                    user_principal_name: Optional[str] = None,
+                                    aad_app_id: Optional[str] = None,
+                                    group_type: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Add a workspace role assignment to grant permissions to a user, service principal, or group.
+        
+        Args:
+            workspace_id: Workspace ID
+            principal_id: The principal's ID (user object ID, service principal ID, or group ID)
+            principal_type: Type of principal ("User", "ServicePrincipal", "Group", "ServicePrincipalProfile", "EntireTenant")
+            role: Workspace role ("Admin", "Member", "Contributor", "Viewer")
+            display_name: Optional display name of the principal
+            user_principal_name: Optional user principal name (required for User type)
+            aad_app_id: Optional Azure AD App ID (required for ServicePrincipal type)
+            group_type: Optional group type ("SecurityGroup", "DistributionList", "Unknown") for Group type
+            
+        Returns:
+            WorkspaceRoleAssignment object
+            
+        Raises:
+            FabricApiError: If role assignment fails
+        """
+        valid_principal_types = ["User", "ServicePrincipal", "Group", "ServicePrincipalProfile", "EntireTenant"]
+        valid_roles = ["Admin", "Member", "Contributor", "Viewer"]
+        valid_group_types = ["SecurityGroup", "DistributionList", "Unknown"]
+        
+        # Validate inputs
+        if principal_type not in valid_principal_types:
+            raise FabricApiError(f"Invalid principal_type '{principal_type}'. Must be one of: {valid_principal_types}")
+        
+        if role not in valid_roles:
+            raise FabricApiError(f"Invalid role '{role}'. Must be one of: {valid_roles}")
+        
+        if group_type and group_type not in valid_group_types:
+            raise FabricApiError(f"Invalid group_type '{group_type}'. Must be one of: {valid_group_types}")
+        
+        self._log(f"Adding {principal_type} role assignment '{role}' for principal {principal_id} to workspace {workspace_id}")
+        
+        # Build principal object
+        principal = {
+            "id": principal_id,
+            "type": principal_type
+        }
+        
+        # Add optional display name
+        if display_name:
+            principal["displayName"] = display_name
+        
+        # Add type-specific details
+        if principal_type == "User" and user_principal_name:
+            principal["userDetails"] = {
+                "userPrincipalName": user_principal_name
+            }
+        elif principal_type == "ServicePrincipal" and aad_app_id:
+            principal["servicePrincipalDetails"] = {
+                "aadAppId": aad_app_id
+            }
+        elif principal_type == "Group" and group_type:
+            principal["groupDetails"] = {
+                "groupType": group_type
+            }
+        
+        # Build request data
+        data = {
+            "principal": principal,
+            "role": role
+        }
+        
+        # Make the API request
+        response = self._make_request(
+            f"workspaces/{workspace_id}/roleAssignments", 
+            method="POST", 
+            data=data
+        )
+        
+        if response.status_code == 201:
+            role_assignment = response.json()
+            self._log(f"Successfully added {role} role assignment for {principal_type} {principal_id}")
+            return role_assignment
+        else:
+            raise FabricApiError(f"Failed to add workspace role assignment: {response.status_code}")
+    
+    def get_workspace_role_assignments(self, 
+                                     workspace_id: str,
+                                     continuation_token: Optional[str] = None,
+                                     get_all: bool = True) -> Union[Dict[str, Any], List[Dict[str, Any]]]:
+        """
+        Get workspace role assignments with support for pagination.
+        
+        Args:
+            workspace_id: Workspace ID
+            continuation_token: Optional token for retrieving the next page of results
+            get_all: If True, retrieves all role assignments across all pages. 
+                    If False, returns the raw API response with pagination info.
+            
+        Returns:
+            If get_all=True: List of WorkspaceRoleAssignment objects
+            If get_all=False: Raw API response with pagination info
+            
+        Raises:
+            FabricApiError: If request fails
+        """
+        self._log(f"Getting workspace role assignments for workspace {workspace_id}")
+        
+        # Build query parameters
+        params = []
+        if continuation_token:
+            params.append(f"continuationToken={continuation_token}")
+        
+        query_string = f"?{'&'.join(params)}" if params else ""
+        uri = f"workspaces/{workspace_id}/roleAssignments{query_string}"
+        
+        # Make the API request
+        response = self._make_request(uri)
+        
+        if response.status_code == 200:
+            response_data = response.json()
+            
+            if get_all:
+                # Collect all role assignments across all pages
+                all_role_assignments = response_data.get('value', [])
+                
+                # Continue fetching pages if continuation token exists
+                while 'continuationToken' in response_data:
+                    next_token = response_data['continuationToken']
+                    self._log(f"Fetching next page of role assignments (token: {next_token[:20]}...)")
+                    
+                    next_params = [f"continuationToken={next_token}"]
+                    next_query = f"?{'&'.join(next_params)}"
+                    next_uri = f"workspaces/{workspace_id}/roleAssignments{next_query}"
+                    
+                    next_response = self._make_request(next_uri)
+                    if next_response.status_code == 200:
+                        next_data = next_response.json()
+                        all_role_assignments.extend(next_data.get('value', []))
+                        response_data = next_data
+                    else:
+                        raise FabricApiError(f"Failed to fetch next page of role assignments: {next_response.status_code}")
+                
+                self._log(f"Retrieved {len(all_role_assignments)} total role assignment(s)")
+                return all_role_assignments
+            else:
+                # Return raw response with pagination info
+                role_assignments = response_data.get('value', [])
+                self._log(f"Retrieved {len(role_assignments)} role assignment(s) in current page")
+                return response_data
+        else:
+            raise FabricApiError(f"Failed to get workspace role assignments: {response.status_code}")
+    
+    def get_workspace_role_assignment_by_principal(self, 
+                                                  workspace_id: str, 
+                                                  principal_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Get a specific workspace role assignment by principal ID.
+        
+        Args:
+            workspace_id: Workspace ID
+            principal_id: Principal ID to search for
+            
+        Returns:
+            WorkspaceRoleAssignment object if found, None otherwise
+            
+        Raises:
+            FabricApiError: If request fails
+        """
+        self._log(f"Searching for role assignment for principal {principal_id} in workspace {workspace_id}")
+        
+        role_assignments = self.get_workspace_role_assignments(workspace_id, get_all=True)
+        
+        # Search for the specific principal
+        for assignment in role_assignments:
+            if assignment.get('principal', {}).get('id') == principal_id:
+                self._log(f"Found role assignment: {assignment.get('role')} for principal {principal_id}")
+                return assignment
+        
+        self._log(f"No role assignment found for principal {principal_id}")
+        return None
 
     def create_eventhub_connection(self, name: str, namespace_name: str, event_hub_name: str, shared_access_policy_name: str, shared_access_key: str):
         """

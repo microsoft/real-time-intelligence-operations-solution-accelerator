@@ -11,6 +11,7 @@ This solution accelerator provides the architecture and working solution for rea
 <br/>
 
 <div align="center">
+
 [**SOLUTION OVERVIEW**](#solution-overview) \| [**QUICK DEPLOY**](#quick-deploy) \| [**BUSINESS SCENARIO**](#business-use-case) \| [**SUPPORTING DOCUMENTATION**](#supporting-documentation)
 
 </div>
@@ -19,6 +20,7 @@ This solution accelerator provides the architecture and working solution for rea
 <h2><img src="./docs/images/readme/solution-overview.png" width="48" />
 Solution overview
 </h2>
+
 This solution accelerator provides a working solution for manufacturing asset performance monitoring, real-time anomaly detection, and anomaly notification. The manufacturing facility telemetry data is synthetically generated with the `Telemetry Data Simulator`. This architecture can be extended to other industries as long as the appropriate data is generated or actual operations data is ingested into the `Event Hub`, and related component configurations and Kusto Query Language (KQL) code are updated accordingly. For a brief description of the architecture, please refer to [Solution Architecture Overview](./docs/TechnicalArchitecture.md).
 
 ### Solution architecture
@@ -96,7 +98,7 @@ Follow these steps to deploy the solution to your own Azure subscription:
 
 <br/>
 
-**One-command deployment** - Deploy everything with [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd):
+**One-command deployment** - Deploy everything with [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) and [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (Check [prerquisites](./docs/DeploymentGuide.md#prerequisites)):
 
 ```bash
 # Clone and navigate to repository
@@ -104,8 +106,8 @@ git clone https://github.com/microsoft/real-time-intelligence-operations-solutio
 cd real-time-intelligence-operations-solution-accelerator
 
 # Authenticate (required)
-azd auth login
-az login
+azd auth login # Required to deploy with azd up
+az login # Required to use the Azure CLI commands that connect Azure resources to Fabric workspace
 
 # Recommended: set email to recieve alerts
 azd env set FABRIC_ACTIVATOR_ALERTS_EMAIL "myteam@company.com"
