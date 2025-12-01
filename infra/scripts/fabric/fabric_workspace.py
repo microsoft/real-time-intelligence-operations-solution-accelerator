@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Fabric Workspace Creation and Capacity Assignment Script
+Fabric Workspace Creation and Capacity Assignment Module
 
-This script creates a new Microsoft Fabric workspace (if it doesn't exist) and assigns it 
-to a specified capacity. It uses the FabricApiClient and FabricWorkspaceApiClient classes.
+This module provides workspace creation and capacity assignment functionality for Microsoft Fabric operations.
+It creates a new Microsoft Fabric workspace (if it doesn't exist) and assigns it 
+to a specified capacity.
 
 Usage:
     python fabric_workspace.py --capacity-name "MyCapacity" [--workspace-name "MyWorkspace"]
@@ -15,15 +16,15 @@ Requirements:
 """
 
 import argparse
-import json
 import sys
 from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
-def setup_workspace(capacity_name: str, workspace_name: str) -> object:
+def setup_workspace(fabric_client: FabricApiClient, capacity_name: str, workspace_name: str) -> object:
     """
     Create a workspace (if it doesn't exist) and assign it to the specified capacity.
     
     Args:
+        fabric_client: Authenticated FabricApiClient instance
         capacity_name: Name of the capacity to assign the workspace to
         workspace_name: Name of the workspace to create
         
@@ -31,10 +32,6 @@ def setup_workspace(capacity_name: str, workspace_name: str) -> object:
         True if successful, False otherwise
     """
     try:
-        # Initialize the Fabric API client
-        print("🚀 Initializing Fabric API client...")
-        fabric_client = FabricApiClient()
-        
         print(f"🔍 Searching for capacity: '{capacity_name}'")
 
         capacity = fabric_client.get_capacity(capacity_name)
@@ -56,9 +53,13 @@ def setup_workspace(capacity_name: str, workspace_name: str) -> object:
                 workspace_id = fabric_client.create_workspace(name=workspace_name)
                 print(f"✅ Successfully created workspace: {workspace_name} (ID: {workspace_id})")
             except FabricApiError as e:
-                print(f"❌ Failed to create workspace: {e}")
-                return None
-            
+                if e.status_code == 409:
+                    print(f"ℹ️ Workspace '{workspace_name}' already exists")
+                    workspace_id = fabric_client.get_workspace(workspace_name)['id']
+                else:
+                    print(f"❌ Failed to create workspace: {e}")
+                    return None
+        
         workspace_setup_response = {"id": workspace_id }
 
         print(f"🔧 Initializing workspace-specific client...")
@@ -69,7 +70,7 @@ def setup_workspace(capacity_name: str, workspace_name: str) -> object:
             workspace_client.assign_to_capacity(capacity_id)
             print(f"✅ Successfully assigned workspace to capacity!")
         except FabricApiError as e:
-            print(f"❌ Failed to assign workspace to capacity: {e}")
+            print(f"❌ FabricApiError ({e.status_code}): {e}")
             return None
         
         print(f"🔍 Verifying workspace assignment...")
@@ -129,23 +130,17 @@ Examples:
     # Parse arguments
     args = parser.parse_args()
     
-    print(f"🏗️  Fabric Workspace Creation Script")
-    print(f"   Capacity: {args.capacity_name}")
-    print(f"   Workspace: {args.workspace_name}")
-    print(f"" + "="*60)
-    
     # Execute the main logic
-    success = setup_workspace(
+    fabric_client = FabricApiClient()
+    
+    result = setup_workspace(
+        fabric_client=fabric_client,
         capacity_name=args.capacity_name,
         workspace_name=args.workspace_name
     )
     
-    if success:
-        print(f"\n🎉 fabric_workspace script completed successfully.")
-        sys.exit(0)
-    else:
-        print(f"\n💥 fabric_workspace script failed.")
-        sys.exit(1)
+    print(f"\n✅ Workspace ID: {result.get('id') if result else 'Failed'}")
+    print(f"✅ Workspace Name: {args.workspace_name}")
 
 
 if __name__ == "__main__":

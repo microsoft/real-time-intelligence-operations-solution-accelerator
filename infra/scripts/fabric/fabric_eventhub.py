@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
+#!/usr/bin/env python3
 """
-Fabric Event Hub Connection Setup Script
+Fabric Event Hub Connection Setup Module
 
-This script creates or retrieves an Event Hub connection in Microsoft Fabric.
+This module provides Event Hub connection setup functionality for Microsoft Fabric operations.
 It can automatically retrieve Event Hub access keys using Azure credentials,
 or use provided keys to set up connections.
 
@@ -12,7 +13,7 @@ Features:
 - Support for both hub-level and namespace-level key retrieval
 
 Usage:
-    python fabric_event_hub.py
+    python fabric_eventhub.py --connection-name "MyConnection" --namespace-name "namespace" --event-hub-name "hub"
 
 Requirements:
     - fabric_api.py module in the same directory
@@ -25,6 +26,8 @@ Environment Setup:
     pip install azure-mgmt-eventhub azure-identity
 """
 
+import argparse
+import sys
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.eventhub import EventHubManagementClient
 from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
@@ -138,11 +141,12 @@ def get_event_hub_namespace_primary_key(namespace_name: str, subscription_id: st
         return result
         
     except Exception as e:
-        print(f"❌ Failed to retrieve Event Hub namespace access keys: {e}")
+        print(f"❌ Error: {e}")
         raise
 
 
 def setup_eventhub_connection(
+    fabric_client: FabricApiClient,
     connection_name: str,
     namespace_name: str,
     event_hub_name: str,
@@ -160,6 +164,7 @@ def setup_eventhub_connection(
     with the new parameters. Otherwise, a new connection will be created.
     
     Args:
+        fabric_client: Authenticated FabricApiClient instance
         connection_name: Display name for the connection
         namespace_name: Event Hub namespace name
         event_hub_name: Event Hub name
@@ -185,7 +190,8 @@ def setup_eventhub_connection(
         access_key = key_info['primary_key']
         print(f"✅ Successfully retrieved access key")
         
-        client = FabricApiClient()
+        # Use the passed fabric_client instead of creating a new one
+        client = fabric_client
 
         connections = client.list_connections()
 
@@ -233,44 +239,71 @@ def setup_eventhub_connection(
         raise
 
 
-if __name__ == "__main__":
-    # Configuration - update these values for your environment
-    CONNECTION_NAME = "MyEventHubConnection"
-    EVENT_HUB_NAMESPACE = "<your-namespace>"
-    EVENT_HUB_NAME = "<your-event-hub-name>"
-    SUBSCRIPTION_ID = "<your-subscription-id>"
-    RESOURCE_GROUP_NAME = "<your-resource-group>"
-    AUTHORIZATION_RULE_NAME = "<your-authorization-rule-name>" # RootManageSharedAccessKey
+def main():
+    """Main function to handle command line arguments and execute Event Hub connection setup."""
+    parser = argparse.ArgumentParser(
+        description="Setup Event Hub connection in Microsoft Fabric",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python fabric_eventhub.py --connection-name "MyConnection" --namespace-name "mynamespace" --event-hub-name "myhub" --subscription-id "sub-id" --resource-group "rg-name"
+        """
+    )
     
-    try:
-        print("Setting up Event Hub connection in Microsoft Fabric...")
-        print("="*60)
-        
-        # Example: Setup connection with automatic key retrieval
-        print("Setting up Event Hub connection with automatic key retrieval...")
-        result = setup_eventhub_connection(
-            connection_name=CONNECTION_NAME,
-            namespace_name=EVENT_HUB_NAMESPACE,
-            event_hub_name=EVENT_HUB_NAME,
-            subscription_id=SUBSCRIPTION_ID,
-            resource_group_name=RESOURCE_GROUP_NAME,
-            authorization_rule_name=AUTHORIZATION_RULE_NAME
-        )
-        
-        # Example: Just get the keys without setting up Fabric connection
-        print("\nAdditionally, showing key retrieval...")
-        keys = get_event_hub_namespace_primary_key(
-            namespace_name=EVENT_HUB_NAMESPACE,
-            subscription_id=SUBSCRIPTION_ID,
-            resource_group_name=RESOURCE_GROUP_NAME
-        )
-        
-        print(f"\n✅ Event Hub connection setup complete.")
-        print(f"Connection ID: {result.get('id')}")
-        print(f"Connection Name: {result.get('displayName')}")
-        print(f"Primary Key: {keys['primary_key'][:10]}...")  # Show only first 10 chars for security
-        print(f"Key Name: {keys['key_name']}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        exit(1)
+    parser.add_argument(
+        "--connection-name", 
+        required=True,
+        help="Name for the Event Hub connection"
+    )
+    
+    parser.add_argument(
+        "--namespace-name", 
+        required=True,
+        help="Event Hub namespace name"
+    )
+    
+    parser.add_argument(
+        "--event-hub-name", 
+        required=True,
+        help="Event Hub name"
+    )
+    
+    parser.add_argument(
+        "--subscription-id", 
+        required=True,
+        help="Azure subscription ID"
+    )
+    
+    parser.add_argument(
+        "--resource-group", 
+        required=True,
+        help="Resource group name"
+    )
+    
+    parser.add_argument(
+        "--authorization-rule",
+        default="RootManageSharedAccessKey",
+        help="Authorization rule name (default: RootManageSharedAccessKey)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Execute the main logic
+    fabric_client = FabricApiClient()
+    
+    result = setup_eventhub_connection(
+        fabric_client=fabric_client,
+        connection_name=args.connection_name,
+        namespace_name=args.namespace_name,
+        event_hub_name=args.event_hub_name,
+        subscription_id=args.subscription_id,
+        resource_group_name=args.resource_group,
+        authorization_rule_name=args.authorization_rule
+    )
+    
+    print(f"\n✅ Connection ID: {result.get('id')}")
+    print(f"✅ Connection Name: {result.get('displayName')}")
+
+
+if __name__ == "__main__":
+    main()

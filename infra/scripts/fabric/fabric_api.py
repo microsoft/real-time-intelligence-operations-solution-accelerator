@@ -256,7 +256,7 @@ class FabricApiClient:
                 
                 try:
                     error_response = response.json()
-                    print(f"Error response: {json.dumps(error_response, indent=2)}")
+                    self._log(f"Error response: {json.dumps(error_response, indent=2)}", level="error")
 
                     if 'error' in error_response:
                         error_data = error_response['error']
@@ -385,12 +385,27 @@ class FabricApiClient:
             Capacity.Read.All or Capacity.ReadWrite.All
         """
         self._log("Getting all capacities accessible to user")
-        response = self._make_request("capacities")
-        capacities = response.json().get('value', [])
-        self._log(f"Found {len(capacities)} capacity(ies)")
-        return capacities
+        
+        try:
+            response = self._make_request("capacities")
+            
+            if response.status_code == 200:
+                capacities = response.json().get('value', [])
+                self._log(f"Found {len(capacities)} capacity(ies)")
+                return capacities
+            else:
+                error_msg = f"Failed to get capacities: HTTP {response.status_code}"
+                self._log(error_msg, level="error")
+                raise FabricApiError(error_msg)
+                
+        except FabricApiError:
+            raise
+        except Exception as e:
+            error_msg = f"Error getting capacities: {e}"
+            self._log(error_msg, level="error")
+            raise FabricApiError(error_msg)
 
-    def get_capacity(self, capacity_name: str) -> Dict[str, Any]:
+    def get_capacity(self, capacity_name: str) -> Optional[Dict[str, Any]]:
         """
         Get capacity by name.
         
@@ -398,29 +413,50 @@ class FabricApiClient:
             capacity_name: Name of the capacity
             
         Returns:
-            Capacity object containing:
-            - id: Capacity ID (GUID)
-            - displayName: Capacity display name
-            - sku: Capacity SKU (e.g., "F2", "F4", "P1", etc.)
-            - state: Capacity state ("Active", "Paused", "Suspended", etc.)
-            - region: Azure region where capacity is located
-            - admins: List of capacity administrators
-            - contributors: List of capacity contributors (if any)  
+            Capacity object if found, None otherwise
+            
+        Raises:
+            FabricApiError: If request fails
         """
         capacities = self.get_capacities()
         capacity = next((c for c in capacities if c['displayName'].lower() == capacity_name.lower()), None)
         
         if not capacity:
-            raise FabricApiError(f"Capacity '{capacity_name}' not found")
+            self._log(f"Capacity '{capacity_name}' not found")
+            return None
         
         return capacity
 
     def get_workspaces(self) -> List[Dict[str, Any]]:
-        """Get all workspaces accessible to the user."""
-        response = self._make_request("workspaces")
-        return response.json().get('value', [])
+        """
+        Get all workspaces accessible to the user.
+        
+        Returns:
+            List of workspace objects
+            
+        Raises:
+            FabricApiError: If request fails
+        """
+        try:
+            response = self._make_request("workspaces")
+            
+            if response.status_code == 200:
+                workspaces = response.json().get('value', [])
+                self._log(f"Found {len(workspaces)} workspaces")
+                return workspaces
+            else:
+                error_msg = f"Failed to get workspaces: HTTP {response.status_code}"
+                self._log(error_msg, level="error")
+                raise FabricApiError(error_msg)
+                
+        except FabricApiError:
+            raise
+        except Exception as e:
+            error_msg = f"Error getting workspaces: {e}"
+            self._log(error_msg, level="error")
+            raise FabricApiError(error_msg)
     
-    def get_workspace(self, workspace_name: str) -> Dict[str, Any]:
+    def get_workspace(self, workspace_name: str) -> Optional[Dict[str, Any]]:
         """
         Get workspace by name.
         
@@ -428,16 +464,17 @@ class FabricApiClient:
             workspace_name: Name of the workspace
             
         Returns:
-            Workspace object
+            Workspace object if found, None otherwise
             
         Raises:
-            FabricApiError: If workspace not found
+            FabricApiError: If request fails
         """
         workspaces = self.get_workspaces()
         workspace = next((w for w in workspaces if w['displayName'].lower() == workspace_name.lower()), None)
         
         if not workspace:
-            raise FabricApiError(f"Workspace '{workspace_name}' not found")
+            self._log(f"Workspace '{workspace_name}' not found")
+            return None
         
         return workspace
     
@@ -484,24 +521,41 @@ class FabricApiClient:
         else:
             raise FabricApiError(f"Failed to assign workspace to capacity: {response.status_code}")
     
-    def delete_workspace(self, workspace_id: str) -> None:
+    def delete_workspace(self, workspace_id: str) -> Optional[str]:
         """
         Delete a workspace.
         
         Args:
             workspace_id: ID of the workspace to delete
             
+        Returns:
+            Workspace ID if successfully deleted, None if workspace not found
+            
         Raises:
-            FabricApiError: If deletion fails
+            FabricApiError: If deletion fails due to unexpected error
         """
-        self._log(f"Deleting workspace {workspace_id}")
-        
-        response = self._make_request(f"workspaces/{workspace_id}", method="DELETE")
-        
-        if response.status_code == 200:
-            self._log(f"Successfully deleted workspace")
-        else:
-            raise FabricApiError(f"Failed to delete workspace: {response.status_code}")
+        try:
+            self._log(f"Deleting workspace {workspace_id}")
+            
+            response = self._make_request(f"workspaces/{workspace_id}", method="DELETE")
+            
+            if response.status_code == 200:
+                self._log(f"Successfully deleted workspace")
+                return workspace_id
+            elif response.status_code == 404:
+                self._log(f"Workspace {workspace_id} not found, nothing to delete")
+                return None
+            else:
+                error_msg = f"Failed to delete workspace: {response.status_code}"
+                self._log(error_msg, level="error")
+                raise FabricApiError(error_msg)
+                
+        except FabricApiError:
+            raise
+        except Exception as e:
+            error_msg = f"Error deleting workspace: {e}"
+            self._log(error_msg, level="error")
+            raise FabricApiError(error_msg)
     
     def add_workspace_role_assignment(self, 
                                     workspace_id: str, 
@@ -687,57 +741,64 @@ class FabricApiClient:
         self._log(f"No role assignment found for principal {principal_id}")
         return None
 
-    def create_eventhub_connection(self, name: str, namespace_name: str, event_hub_name: str, shared_access_policy_name: str, shared_access_key: str):
+    def create_eventhub_connection(self, name: str, namespace_name: str, event_hub_name: str, shared_access_policy_name: str, shared_access_key: str) -> Optional[Dict[str, Any]]:
         """
-        Create a generic connection in Microsoft Fabric.
-        """
-        try:
-            print(f"Creating connection: {name}")
+        Create an Event Hub connection in Microsoft Fabric.
+        
+        Args:
+            name: Display name for the connection
+            namespace_name: Event Hub namespace name
+            event_hub_name: Event Hub name
+            shared_access_policy_name: Shared access key policy name
+            shared_access_key: Shared access key
             
-            connection_payload = {
-                "displayName": name,
-                "connectivityType": "ShareableCloud",
-                "allowConnectionUsageInGateway": "false",
-                "connectionDetails": {
-                    "type": "EventHub",
-                    "creationMethod": "EventHub.Contents",
-                    "parameters": [
-                        {
-                            "name": "endpoint",
-                            "dataType": "Text",
-                            "value": namespace_name,
-                        },
-                        {
-                            "name": "entityPath",
-                            "dataType": "Text",
-                            "value": event_hub_name,
-                        }
-                    ]
-                },
-                "credentialDetails": {
-                    "credentials": {
-                        "credentialType": "Basic", # the endpoint only accepts Basic auth, but takes SAS key with policy name as password and username
-                        "username": shared_access_policy_name, #"RootManageSharedAccessKey",
-                        "password": shared_access_key,
+        Returns:
+            Dictionary with connection information if successful, None otherwise
+            
+        Raises:
+            FabricApiError: If connection creation fails
+        """
+        self._log(f"Creating Event Hub connection: {name}")
+        
+        connection_payload = {
+            "displayName": name,
+            "connectivityType": "ShareableCloud",
+            "allowConnectionUsageInGateway": "false",
+            "connectionDetails": {
+                "type": "EventHub",
+                "creationMethod": "EventHub.Contents",
+                "parameters": [
+                    {
+                        "name": "endpoint",
+                        "dataType": "Text",
+                        "value": namespace_name,
+                    },
+                    {
+                        "name": "entityPath",
+                        "dataType": "Text",
+                        "value": event_hub_name,
                     }
+                ]
+            },
+            "credentialDetails": {
+                "credentials": {
+                    "credentialType": "Basic", # the endpoint only accepts Basic auth, but takes SAS key with policy name as password and username
+                    "username": shared_access_policy_name, #"RootManageSharedAccessKey",
+                    "password": shared_access_key,
                 }
             }
+        }
 
-            response = self._make_request(f"connections", method="POST", data=connection_payload)
-            
-            if response.status_code == 201:
-                return response.json()
-            else:
-                response.raise_for_status()
-                
-        except requests.exceptions.RequestException as e:
-            print(f"API request error: {e}")
-            raise
-        except Exception as e:
-            print(f"Error creating connection: {e}")
-            raise
+        response = self._make_request(f"connections", method="POST", data=connection_payload)
+        
+        if response.status_code == 201:
+            connection = response.json()
+            self._log(f"Successfully created Event Hub connection: {name}")
+            return connection
+        else:
+            raise FabricApiError(f"Failed to create Event Hub connection: {response.status_code}")
 
-    def update_eventhub_connection(self, connection_id: str, name: str, namespace_name: str, event_hub_name: str, shared_access_policy_name: str, shared_access_key: str):
+    def update_eventhub_connection(self, connection_id: str, name: str, namespace_name: str, event_hub_name: str, shared_access_policy_name: str, shared_access_key: str) -> Optional[Dict[str, Any]]:
         """
         Update an existing Event Hub connection in Microsoft Fabric.
         
@@ -750,13 +811,13 @@ class FabricApiClient:
             shared_access_key: Shared access key
             
         Returns:
-            Dictionary with updated connection information if successful
+            Dictionary with updated connection information if successful, None otherwise
             
         Raises:
             FabricApiError: If connection update fails
         """
         try:
-            print(f"Updating connection: {name} (ID: {connection_id})")
+            self._log(f"Updating Event Hub connection: {name} (ID: {connection_id})")
             
             connection_payload = {
                 "displayName": name,
@@ -774,112 +835,123 @@ class FabricApiClient:
             response = self._make_request(f"connections/{connection_id}", method="PATCH", data=connection_payload)
             
             if response.status_code == 200:
-                return response.json()
+                connection = response.json()
+                self._log(f"Successfully updated Event Hub connection: {name}")
+                return connection
             else:
-                response.raise_for_status()
+                raise FabricApiError(f"Failed to update Event Hub connection: {response.status_code}")
                 
-        except requests.exceptions.RequestException as e:
-            print(f"API request error: {e}")
+        except FabricApiError:
             raise
         except Exception as e:
-            print(f"Error updating connection: {e}")
-            raise
+            raise FabricApiError(f"Error updating connection: {e}")
     
-    def list_connections(self):
+    def list_connections(self) -> List[Dict[str, Any]]:
         """
         List all connections in the workspace.
         
         Returns:
-        --------
-        list
             List of connections in the workspace
-        """
-        try:
-            response = self._make_request(f"connections")
             
-            if response.status_code == 200:
-                connections = response.json().get("value", [])
-                return connections
-            else:
-                response.raise_for_status()
-                
-        except Exception as e:
-            print(f"Error listing connections: {e}")
-            raise
+        Raises:
+            FabricApiError: If request fails
+        """
+        self._log("Getting all connections")
+        response = self._make_request(f"connections")
+        
+        if response.status_code == 200:
+            connections = response.json().get("value", [])
+            self._log(f"Found {len(connections)} connection(s)")
+            return connections
+        else:
+            raise FabricApiError(f"Failed to list connections: {response.status_code}")
     
-    def get_connection(self, connection_id: str):
+    def get_connection(self, connection_id: str) -> Dict[str, Any]:
         """
         Get details of a specific connection.
         
-        Parameters:
-        -----------
-        connection_id : str
-            ID of the connection to retrieve
+        Args:
+            connection_id: ID of the connection to retrieve
             
         Returns:
-        --------
-        dict
             Connection details
+            
+        Raises:
+            FabricApiError: If request fails
         """
-        try:
-            response = self._make_request(f"connections/{connection_id}")
+        self._log(f"Getting connection details for {connection_id}")
+        response = self._make_request(f"connections/{connection_id}")
 
-            if response.status_code == 200:
-                return response.json()
-            else:
-                response.raise_for_status()
-                
-        except Exception as e:
-            print(f"Error getting connection: {e}")
-            raise
+        if response.status_code == 200:
+            connection = response.json()
+            self._log(f"Successfully retrieved connection: {connection.get('displayName', 'N/A')}")
+            return connection
+        else:
+            raise FabricApiError(f"Failed to get connection: {response.status_code}")
     
-    def delete_connection(self, connection_id: str):
+    def delete_connection(self, connection_id: str) -> Optional[str]:
         """
         Delete a connection from the workspace.
         
-        Parameters:
-        -----------
-        connection_id : str
-            ID of the connection to delete
+        Args:
+            connection_id: ID of the connection to delete
             
         Returns:
-        --------
-        bool
-            True if deletion was successful
+            Connection ID if successfully deleted, None if connection not found
+            
+        Raises:
+            FabricApiError: If deletion fails due to unexpected error
         """
         try:
+            self._log(f"Deleting connection {connection_id}")
             response = self._make_request(f"connections/{connection_id}", method="DELETE")
             
-            if response.status_code == 204:
-                return True
+            if response.status_code in [200, 204]:
+                self._log(f"Successfully deleted connection {connection_id}")
+                return connection_id
+            elif response.status_code == 404:
+                self._log(f"Connection {connection_id} not found, nothing to delete")
+                return None
             else:
-                response.raise_for_status()
+                error_msg = f"Failed to delete connection: {response.status_code}"
+                self._log(error_msg, level="error")
+                raise FabricApiError(error_msg)
                 
-        except Exception as e:
-            print(f"Error deleting connection: {e}")
+        except FabricApiError:
             raise
+        except Exception as e:
+            error_msg = f"Error deleting connection: {e}"
+            self._log(error_msg, level="error")
+            raise FabricApiError(error_msg)
 
-    def list_supported_connection_types(self):
+    def list_supported_connection_types(self) -> List[Dict[str, Any]]:
         """
         List all supported connection types in the workspace.
         
         Returns:
-        --------
-        list
             List of supported connection types
+            
+        Raises:
+            FabricApiError: If request fails
         """
         try:
             response = self._make_request(f"connections/supportedConnectionTypes")
             
             if response.status_code == 200:
                 connection_types = response.json().get("value", [])
+                self._log(f"Found {len(connection_types)} supported connection types")
                 return connection_types
             else:
-                response.raise_for_status()
+                error_msg = f"Failed to list supported connection types: HTTP {response.status_code}"
+                self._log(error_msg, level="error")
+                raise FabricApiError(error_msg)
                 
-        except Exception as e:
-            print(f"Error listing supported connection types: {e}")
+        except FabricApiError:
             raise
+        except Exception as e:
+            error_msg = f"Error listing supported connection types: {e}"
+            self._log(error_msg, level="error")
+            raise FabricApiError(error_msg)
 
 class FabricWorkspaceApiClient(FabricApiClient):
     """
@@ -975,21 +1047,17 @@ class FabricWorkspaceApiClient(FabricApiClient):
         else:
             raise FabricApiError(f"Failed to assign workspace to capacity: {response.status_code}")
     
-    def delete(self) -> None:
+    def delete(self) -> Optional[str]:
         """
         Delete this workspace.
         
+        Returns:
+            Workspace ID if successfully deleted, None if workspace not found
+            
         Raises:
-            FabricApiError: If deletion fails
+            FabricApiError: If deletion fails due to unexpected error
         """
-        self._log(f"Deleting workspace {self.workspace_id}")
-        
-        response = self._make_request(f"workspaces/{self.workspace_id}", method="DELETE")
-        
-        if response.status_code == 200:
-            self._log(f"Successfully deleted workspace")
-        else:
-            raise FabricApiError(f"Failed to delete workspace: {response.status_code}")
+        return super().delete_workspace(self.workspace_id)
     
     def add_role_assignment(self, 
                             principal_id: str, 

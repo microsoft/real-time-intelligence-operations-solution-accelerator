@@ -16,7 +16,7 @@ def create_kusto_client(cluster_uri: str):
         return client
     
     except Exception as e:
-        print(f"Error creating Kusto client: {e}")
+        print(f"❌ Error: {e}")
         raise
 
 
@@ -186,7 +186,7 @@ def load_data_to_fabric(
                 existing_files[table_name] = file_path
                 print(f"  ✓ Found {table_name}.csv")
             else:
-                print(f"  ⚠ Warning: {table_name}.csv not found, skipping...")
+                print(f"  Warning: {table_name}.csv not found, skipping...")
         
         if not existing_files:
             raise FileNotFoundError(f"No CSV files found in {data_path}")
@@ -257,7 +257,7 @@ def load_data_to_fabric(
         return results
     
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"Error: {e}")
         raise
 
 
@@ -282,5 +282,6 @@ if __name__ == "__main__":
             overwrite_existing=args.overwrite
         )
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"\n❌ Unexpected error: {e}")
+        sys.exit(1)
         exit(1)

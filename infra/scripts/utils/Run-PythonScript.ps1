@@ -11,8 +11,7 @@
     Relative path to the Python script to execute (relative to repository root).
     Examples: 
     - "infra/scripts/fabric/deploy_fabric_rti.py"
-    - "infra/scripts/fabric/remove_fabric_rti.py" 
-    - "infra/scripts/fabric/add_fabric_workspace_admins.py"
+    - "infra/scripts/fabric/delete_fabric_rti.py" 
 
 .PARAMETER ScriptArguments
     Optional array of arguments to pass to the Python script.
@@ -33,10 +32,7 @@
     .\Run-PythonScript.ps1 -ScriptPath "infra/scripts/fabric/deploy_fabric_rti.py"
     
 .EXAMPLE
-    .\Run-PythonScript.ps1 -ScriptPath "infra/scripts/fabric/add_fabric_workspace_admins.py" -ScriptArguments @("--fabricAdmins", '["user@contoso.com"]')
-
-.EXAMPLE
-    .\Run-PythonScript.ps1 -ScriptPath "infra/scripts/fabric/remove_fabric_rti.py" -SkipPythonVirtualEnvironment -SkipPythonDependencies
+    .\Run-PythonScript.ps1 -ScriptPath "infra/scripts/fabric/delete_fabric_rti.py" -SkipPythonVirtualEnvironment -SkipPythonDependencies
 
 .NOTES
     Prerequisites: PowerShell 7+, Python 3.9+

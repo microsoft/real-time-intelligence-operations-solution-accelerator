@@ -28,21 +28,10 @@ env:
   AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
   AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
   AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-  AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
-  AZURE_ENV_NAME_DEV: ${{ vars.AZURE_ENV_NAME }}
-  AZURE_RESOURCE_GROUP_NAME_DEV: ${{ vars.AZURE_RESOURCE_GROUP_NAME }}
-  AZURE_FABRIC_WORKSPACE_NAME_DEV: "Real-Time Intelligence for Operations - Dev"
-  
-  # Fabric configuration variables
-  FABRIC_ACTIVATOR_ALERTS_EMAIL: "alerts@contoso.com"
-  
-  # Custom resource names (can be overridden by changing these values)
-  FABRIC_EVENTHOUSE_NAME: ""  # If empty, will use default: rti_eventhouse_{suffix}
-  FABRIC_EVENTHOUSE_DATABASE_NAME: ""  # If empty, will use default: rti_kqldb_{suffix}
-  FABRIC_EVENT_HUB_CONNECTION_NAME: ""  # If empty, will use default: rti_eventhub_connection_{suffix}
-  FABRIC_RTIDASHBOARD_NAME: ""  # If empty, will use default: rti_dashboard_{suffix}
-  FABRIC_EVENTSTREAM_NAME: ""  # If empty, will use default: rti_eventstream_{suffix}
-  FABRIC_ACTIVATOR_NAME: ""  # If empty, will use default: rti_activator_{suffix}
+  AZURE_ENV_NAME_DEV: '${{ vars.AZURE_ENV_NAME }}d'
+  AZURE_RESOURCE_GROUP_NAME_DEV: 'rg-${{ vars.AZURE_ENV_NAME }}d'
+  # Optional environment variables
+  FABRIC_WORKSPACE_ADMINISTRATORS: ${{ vars.FABRIC_WORKSPACE_ADMINISTRATORS }}
 
 jobs:
   build:
@@ -80,11 +69,10 @@ jobs:
         run: |
           echo "Validating Bicep template..."
           az deployment group validate \
-            --resource-group rg-${{ env.AZURE_ENV_NAME_DEV }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }} \
             --template-file infra/main.json \
             --parameters infra/main.parameters.json \
-            --parameters solutionName=${{ env.AZURE_ENV_NAME_DEV }} \
-            --parameters location=${{ env.AZURE_LOCATION }} || true
+            --parameters solutionName=${{ env.AZURE_ENV_NAME_DEV }}
           echo "✅ Bicep template validation completed"
 
   deploy-dev:
@@ -134,35 +122,19 @@ jobs:
         working-directory: infra/scripts/utils
         env:
           # Required environment variables from Bicep outputs
-          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME_DEV }}
           SOLUTION_SUFFIX: ${{ steps.bicep-deploy.outputs.SOLUTION_SUFFIX }}
-          AZURE_SUBSCRIPTION_ID: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: ${{ env.AZURE_ENV_NAME_DEV }}
           AZURE_RESOURCE_GROUP: ${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }}
           AZURE_FABRIC_CAPACITY_NAME: ${{ steps.bicep-deploy.outputs.AZURE_FABRIC_CAPACITY_NAME }}
           AZURE_EVENT_HUB_NAME: ${{ steps.bicep-deploy.outputs.AZURE_EVENT_HUB_NAME }}
           AZURE_EVENT_HUB_NAMESPACE_NAME: ${{ steps.bicep-deploy.outputs.AZURE_EVENT_HUB_NAMESPACE_NAME }}
-          
-          # Optional environment variables (use default values if not provided)
-          AZURE_EVENT_HUB_AUTHORIZATION_RULE_NAME: ${{ steps.bicep-deploy.outputs.AZURE_EVENT_HUB_AUTHORIZATION_RULE_NAME || 'RootManageSharedAccessKey' }}
-          FABRIC_WORKSPACE_NAME: ${{ env.AZURE_FABRIC_WORKSPACE_NAME_DEV }}
-          FABRIC_ACTIVATOR_ALERTS_EMAIL: ${{ env.FABRIC_ACTIVATOR_ALERTS_EMAIL }}
-          
-          # Fabric admin members for workspace configuration
-          AZURE_FABRIC_ADMIN_MEMBERS: ${{ steps.bicep-deploy.outputs.AZURE_FABRIC_ADMIN_MEMBERS }}
-          
-          # Custom resource names (YAML variables - modify in env section above)
-          FABRIC_EVENTHOUSE_NAME: ${{ env.FABRIC_EVENTHOUSE_NAME }}
-          FABRIC_EVENTHOUSE_DATABASE_NAME: ${{ env.FABRIC_EVENTHOUSE_DATABASE_NAME }}
-          FABRIC_EVENT_HUB_CONNECTION_NAME: ${{ env.FABRIC_EVENT_HUB_CONNECTION_NAME }}
-          FABRIC_RTIDASHBOARD_NAME: ${{ env.FABRIC_RTIDASHBOARD_NAME }}
-          FABRIC_EVENTSTREAM_NAME: ${{ env.FABRIC_EVENTSTREAM_NAME }}
-          FABRIC_ACTIVATOR_NAME: ${{ env.FABRIC_ACTIVATOR_NAME }}
         run: |
           echo "Running RTI fabric provisioning script..."
           echo "Environment configuration:"
           echo "  Solution: $AZURE_ENV_NAME"
           echo "  Suffix: $SOLUTION_SUFFIX"
           echo "  Workspace: $FABRIC_WORKSPACE_NAME"
+          echo "  Workspace Administrators: ${FABRIC_WORKSPACE_ADMINISTRATORS:-'(none specified)'}"
           echo "  Capacity: $AZURE_FABRIC_CAPACITY_NAME"
           echo "  Event Hub Namespace: $AZURE_EVENT_HUB_NAMESPACE_NAME"
           echo "  Event Hub: $AZURE_EVENT_HUB_NAME"
@@ -185,8 +157,6 @@ jobs:
             -ScriptPath "infra/scripts/fabric/deploy_fabric_rti.py" \
             -SkipPythonVirtualEnvironment \
             -SkipPythonDependencies \
-            -SkipPipUpgrade \
-            -SkipPythonDependencies \
             -SkipPipUpgrade
 
           echo "✅ RTI fabric items provisioning completed"
@@ -194,59 +164,40 @@ jobs:
       - name: Output Deployment Summary
         env:
           SOLUTION_SUFFIX: ${{ steps.bicep-deploy.outputs.SOLUTION_SUFFIX }}
-          FABRIC_WORKSPACE_NAME: ${{ env.AZURE_FABRIC_WORKSPACE_NAME_DEV }}
           AZURE_FABRIC_CAPACITY_NAME: ${{ steps.bicep-deploy.outputs.AZURE_FABRIC_CAPACITY_NAME }}
           AZURE_EVENT_HUB_NAMESPACE_NAME: ${{ steps.bicep-deploy.outputs.AZURE_EVENT_HUB_NAMESPACE_NAME }}
+          AZURE_EVENT_HUB_NAME: ${{ steps.bicep-deploy.outputs.AZURE_EVENT_HUB_NAME }}
         run: |
-          # Extract workspace ID from deployment logs if available
-          WORKSPACE_ID="placeholder-workspace-id"
-          
-          # Construct URLs based on deploy_fabric_rti.py output format
-          AZURE_RG_URL="https://portal.azure.com/#@${{ env.AZURE_TENANT_ID }}/resource/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }}/overview"
-          CAPACITY_URL="https://portal.azure.com/#@${{ env.AZURE_TENANT_ID }}/resource/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }}/providers/Microsoft.Fabric/capacities/${{ env.AZURE_FABRIC_CAPACITY_NAME }}/overview"
-          EVENTHUB_NAMESPACE_URL="https://portal.azure.com/#@${{ env.AZURE_TENANT_ID }}/resource/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }}/providers/Microsoft.EventHub/namespaces/${{ env.AZURE_EVENT_HUB_NAMESPACE_NAME }}/overview"
-          WORKSPACE_URL="https://app.fabric.microsoft.com/groups/${WORKSPACE_ID}?experience=fabric-developer"
-          
-          # Resource names based on naming convention from deploy script
-          EVENTHOUSE_NAME="rti_eventhouse_${{ env.SOLUTION_SUFFIX }}"
-          DATABASE_NAME="rti_kqldb_${{ env.SOLUTION_SUFFIX }}"
-          DASHBOARD_NAME="rti_dashboard_${{ env.SOLUTION_SUFFIX }}"
-          EVENTSTREAM_NAME="rti_eventstream_${{ env.SOLUTION_SUFFIX }}"
-          ACTIVATOR_NAME="rti_activator_${{ env.SOLUTION_SUFFIX }}"
-          CONNECTION_NAME="rti_eventhub_connection_${{ env.SOLUTION_SUFFIX }}"
-          
-          echo "## 🎉 REAL-TIME INTELLIGENCE OPERATIONS DEPLOYMENT COMPLETE!" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Real-Time Intelligence Operations Deployment Complete!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📅 **Completed:** $(date '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_STEP_SUMMARY
-          echo "🏷️ **Solution:** ${{ env.SOLUTION_SUFFIX }}" >> $GITHUB_STEP_SUMMARY
+          echo "🏷️ **Environment:** ${{ env.AZURE_ENV_NAME_DEV }}" >> $GITHUB_STEP_SUMMARY
+          echo "🔖 **Solution Suffix:** ${SOLUTION_SUFFIX}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 📋 DEPLOYED RESOURCES" >> $GITHUB_STEP_SUMMARY
-          echo "| Component | Name | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| 🏠 Workspace | ${{ env.FABRIC_WORKSPACE_NAME }} | ✅ Created |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🏛️ Eventhouse | ${EVENTHOUSE_NAME} | ✅ Created |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🗄️ Database | ${DATABASE_NAME} | ✅ Data Loaded |" >> $GITHUB_STEP_SUMMARY
-          echo "| 📊 Dashboard | ${DASHBOARD_NAME} | ✅ Created |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🌊 Eventstream | ${EVENTSTREAM_NAME} | ✅ Configured |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🚨 Activator | ${ACTIVATOR_NAME} | ✅ Configured |" >> $GITHUB_STEP_SUMMARY
-          echo "| 🔗 Connection | ${CONNECTION_NAME} | ✅ Connected |" >> $GITHUB_STEP_SUMMARY
+          echo "### 🏢 Azure Resources Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "| Resource | Name |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 📂 Resource Group | ${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| ⚡ Fabric Capacity | ${AZURE_FABRIC_CAPACITY_NAME} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📡 Event Hub Namespace | ${AZURE_EVENT_HUB_NAMESPACE_NAME} |" >> $GITHUB_STEP_SUMMARY
+          echo "| 📨 Event Hub | ${AZURE_EVENT_HUB_NAME} |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🏢 AZURE RESOURCES" >> $GITHUB_STEP_SUMMARY
-          echo "- ⚡ **Capacity:** [${{ env.AZURE_FABRIC_CAPACITY_NAME }}](${CAPACITY_URL})" >> $GITHUB_STEP_SUMMARY
-          echo "- 📡 **Event Hub:** [${{ env.AZURE_EVENT_HUB_NAMESPACE_NAME }}](${EVENTHUB_NAMESPACE_URL})" >> $GITHUB_STEP_SUMMARY
-          echo "- 📂 **Resource Group:** [${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }}](${AZURE_RG_URL})" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Azure Portal Links" >> $GITHUB_STEP_SUMMARY
+          echo "- 📂 [Resource Group](https://portal.azure.com/#@${{ env.AZURE_TENANT_ID }}/resource/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }}/overview)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚡ [Fabric Capacity](https://portal.azure.com/#@${{ env.AZURE_TENANT_ID }}/resource/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }}/providers/Microsoft.Fabric/capacities/${AZURE_FABRIC_CAPACITY_NAME}/overview)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📡 [Event Hub Namespace](https://portal.azure.com/#@${{ env.AZURE_TENANT_ID }}/resource/subscriptions/${{ env.AZURE_SUBSCRIPTION_ID }}/resourceGroups/${{ env.AZURE_RESOURCE_GROUP_NAME_DEV }}/providers/Microsoft.EventHub/namespaces/${AZURE_EVENT_HUB_NAMESPACE_NAME}/overview)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔧 FABRIC RESOURCES" >> $GITHUB_STEP_SUMMARY
-          echo "- 🏠 **Workspace:** [Open in Fabric](${WORKSPACE_URL})" >> $GITHUB_STEP_SUMMARY
-          echo "- 🏛️ **Eventhouse:** [View Eventhouse](${WORKSPACE_URL})" >> $GITHUB_STEP_SUMMARY
-          echo "- 🗄️ **Database:** [Query Database](${WORKSPACE_URL})" >> $GITHUB_STEP_SUMMARY
-          echo "- 📊 **Dashboard:** [View Dashboard](${WORKSPACE_URL})" >> $GITHUB_STEP_SUMMARY
-          echo "- 🌊 **Eventstream:** [Manage Stream](${WORKSPACE_URL})" >> $GITHUB_STEP_SUMMARY
-          echo "- 🚨 **Activator:** [Configure Alerts](${WORKSPACE_URL})" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔧 Fabric Resources (Expected Names)" >> $GITHUB_STEP_SUMMARY
+          echo "The following Fabric resources should have been created with these naming patterns:" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏠 **Workspace:** rti_workspace_${SOLUTION_SUFFIX}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🏛️ **Eventhouse:** rti_eventhouse_${SOLUTION_SUFFIX}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🗄️ **Database:** rti_kqldb_${SOLUTION_SUFFIX}" >> $GITHUB_STEP_SUMMARY
+          echo "- 📊 **Dashboard:** rti_dashboard_${SOLUTION_SUFFIX}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🌊 **Eventstream:** rti_eventstream_${SOLUTION_SUFFIX}" >> $GITHUB_STEP_SUMMARY
+          echo "- 🚨 **Activator:** rti_activator_${SOLUTION_SUFFIX}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✨ **Your real-time intelligence solution is ready!**" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "🚀 **Next Steps:**" >> $GITHUB_STEP_SUMMARY
-          echo "1. Start the event simulator to generate sample data" >> $GITHUB_STEP_SUMMARY
-          echo "2. View real-time analytics in the dashboard" >> $GITHUB_STEP_SUMMARY
-          echo "3. Configure alert recipients in the Activator" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. 📊 Access your Fabric workspace at [app.fabric.microsoft.com](https://app.fabric.microsoft.com)" >> $GITHUB_STEP_SUMMARY
+          echo "2. 🎯 Start the event simulator to generate sample data" >> $GITHUB_STEP_SUMMARY
+          echo "3. 📈 View real-time analytics in the dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "4. 🔔 Configure alert recipients in the Activator" >> $GITHUB_STEP_SUMMARY

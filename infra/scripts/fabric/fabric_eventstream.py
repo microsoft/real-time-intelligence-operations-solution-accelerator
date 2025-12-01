@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Fabric Eventstream Creation Script
+Fabric Eventstream Creation Module
 
-This script creates a Microsoft Fabric Eventstream in a specified workspace if it doesn't exist.
-It creates the eventstream with minimal configuration, and the detailed definition should be 
+This module provides Eventstream creation functionality for Microsoft Fabric operations.
+It creates the Eventstream with minimal configuration, and the detailed definition should be 
 updated using fabric_eventstream_definition.py script.
 
 Usage:
@@ -18,14 +18,16 @@ Requirements:
 import argparse
 import sys
 from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_auth import authenticate_workspace
 
-def create_eventstream(workspace_id: str,
+
+def create_eventstream(workspace_client: FabricWorkspaceApiClient,
                       eventstream_name: str = "rti_eventstream"):
     """
     Create an Eventstream in the specified workspace if it doesn't exist.
     
     Args:
-        workspace_id: ID of the workspace where the eventstream will be created (required)
+        workspace_client: Authenticated FabricWorkspaceApiClient instance
         eventstream_name: Name for the eventstream (required, whitespaces will be removed)
 
     Returns:
@@ -43,13 +45,12 @@ def create_eventstream(workspace_id: str,
         if not eventstream_name:
             raise ValueError("eventstream_name cannot be empty after removing whitespaces")
         
-        # Initialize the Fabric API client
-        print("🚀 Initializing Fabric API client...")
-        fabric_client = FabricWorkspaceApiClient(workspace_id=workspace_id)
+        # Use provided workspace client
+        print("🔍 Using provided Fabric Workspace API client...")
 
         # Check if eventstream already exists
         print("🔍 Checking for existing eventstream...")
-        existing_eventstream = fabric_client.get_eventstream_by_name(eventstream_name)
+        existing_eventstream = workspace_client.get_eventstream_by_name(eventstream_name)
         
         if existing_eventstream:
             print(f"✅ Eventstream '{eventstream_name}' already exists (ID: {existing_eventstream.get('id')})")
@@ -57,7 +58,7 @@ def create_eventstream(workspace_id: str,
         else:
             # Create a new eventstream with minimal configuration
             print(f"📊 Creating new eventstream '{eventstream_name}'...")
-            eventstream_result = fabric_client.create_eventstream(
+            eventstream_result = workspace_client.create_eventstream(
                 display_name=eventstream_name,
                 description=f"Eventstream: {eventstream_name}"
             )
@@ -69,10 +70,10 @@ def create_eventstream(workspace_id: str,
             return eventstream_result
         
     except FabricApiError as e:
-        print(f"❌ Error in eventstream creation: {e}")
+        print(f"❌ FabricApiError ({e.status_code}): {e}")
         raise
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"❌ Error: {e}")
         raise
 
 def main():
@@ -105,25 +106,21 @@ Examples:
     # Parse arguments
     args = parser.parse_args()
     
-    print(f"📊 Eventstream Creation Script")
-    print(f"  Workspace ID: {args.workspace_id}")
-    print(f"  Eventstream Name: {args.eventstream_name or '(not provided)'}")
-    print("=" * 60)
-    
     # Execute the main logic
-    try:
-        result = create_eventstream(
-            workspace_id=args.workspace_id,
-            eventstream_name=args.eventstream_name
-        )
-        
-        print(f"\n🎉 Eventstream creation completed successfully.")
-        print(f"Eventstream ID: {result.get('id')}")
-        print(f"Eventstream Name: {result.get('displayName')}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        exit(1)
+    
+    workspace_client = authenticate_workspace(args.workspace_id)
+    if not workspace_client:
+        print("❌ Failed to authenticate workspace-specific Fabric API client")
+        sys.exit(1)
+    
+    result = create_eventstream(
+        workspace_client=workspace_client,
+        workspace_id=args.workspace_id,
+        eventstream_name=args.eventstream_name
+    )
+    
+    print(f"\n✅ Eventstream ID: {result.get('id')}")
+    print(f"✅ Eventstream Name: {result.get('displayName')}")
 
 
 if __name__ == "__main__":

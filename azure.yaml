@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
-name: real-time-ingestion-with-fabric
+name: real-time-intelligence-operations-solution-accelerator
+metadata:
+  template: real-time-intelligence-operations-solution-accelerator@1.0
 
 requiredVersions:
   azd: ">1.20.0"
@@ -20,11 +22,11 @@ hooks:
   predown:
     windows:
       shell: pwsh
-      run: ./infra/scripts/utils/Run-PythonScript.ps1 -ScriptPath "infra/scripts/fabric/remove_fabric_rti.py"
+      run: ./infra/scripts/utils/Run-PythonScript.ps1 -ScriptPath "infra/scripts/fabric/delete_fabric_rti.py"
       interactive: true
       continueOnError: false
     posix:
       shell: pwsh
-      run: ./infra/scripts/utils/Run-PythonScript.ps1 -ScriptPath "infra/scripts/fabric/remove_fabric_rti.py" -SkipPythonVirtualEnvironment
+      run: ./infra/scripts/utils/Run-PythonScript.ps1 -ScriptPath "infra/scripts/fabric/delete_fabric_rti.py" -SkipPythonVirtualEnvironment
       interactive: true
       continueOnError: false

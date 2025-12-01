@@ -8,29 +8,43 @@ variables for configuration and calls each function directly.
 
 Functions executed in order:
 1. setup_workspace - Create and configure Fabric workspace
-2. setup_eventhouse - Set up Eventhouse in the workspace  
-3. setup_fabric_database - Set up database tables and schema
-4. load_data_to_fabric - Load sample data into Fabric
-5. setup_eventhub_connection - Configure Event Hub connection
-6. setup_real_time_dashboard - Create real-time dashboard in Fabric
-7. create_eventstream - Create Eventstream (empty)
-8. create_activator - Create Activator (empty)
-9. update_activator_definition - Configure Activator (Reflex) for real-time alerts
-10. update_eventstream_definition - Configure Eventstream with Event Hub to Eventhouse flow
+2. setup_workspace_administrators - Add workspace administrators
+3. setup_eventhouse - Set up Eventhouse in the workspace  
+4. setup_fabric_database - Set up database tables and schema
+5. load_data_to_fabric - Load sample data into Fabric
+6. setup_eventhub_connection - Configure Event Hub connection
+7. setup_real_time_dashboard - Create real-time dashboard in Fabric
+8. create_eventstream - Create Eventstream (empty)
+9. create_activator - Create Activator (empty)
+10. update_activator_definition - Configure Activator (Reflex) for real-time alerts
+11. update_eventstream_definition - Configure Eventstream with Event Hub to Eventhouse flow
 
 Usage:
     python deploy_fabric_rti.py
 
 Environment Variables (from Bicep outputs):
-    AZURE_FABRIC_CAPACITY_NAME - Name of the Fabric capacity
-    AZURE_FABRIC_WORKSPACE_NAME - Name of the Fabric workspace 
-    AZURE_EVENTHOUSE_NAME - Name of the Eventhouse to create
-    AZURE_KUSTO_CLUSTER_URI - Kusto cluster connection URI
-    AZURE_KUSTO_DATABASE_NAME - Name of the Kusto database
-    AZURE_EVENT_HUB_CONNECTION_NAME - Event Hub connection name
-    AZURE_EVENT_HUB_NAMESPACE_NAME - Event Hub namespace name
-    AZURE_EVENT_HUB_NAME - Event Hub name
-    SOLUTION_SUFFIX - Suffix to append to resource names
+    AZURE_LOCATION - The location the resources were deployed to
+    AZURE_RESOURCE_GROUP - The name of the resource group
+    AZURE_SUBSCRIPTION_ID - The Azure subscription ID (from azd environment)
+    AZURE_ENV_NAME - The azd environment name (used as solution name)
+    AZURE_FABRIC_CAPACITY_NAME - The name of the Fabric capacity resource
+    AZURE_FABRIC_CAPACITY_ADMINISTRATORS - The identities added as Fabric Capacity Admin members
+    AZURE_EVENT_HUB_NAMESPACE_NAME - The name of the Event Hub Namespace created for ingestion
+    AZURE_EVENT_HUB_NAMESPACE_HOSTNAME - The hostname of the Event Hub Namespace created for ingestion  
+    AZURE_EVENT_HUB_NAME - The name of the Event Hub created for ingestion
+    AZURE_EVENT_HUB_AUTHORIZATION_RULE_NAME - Event Hub authorization rule name (optional, defaults to "RootManageSharedAccessKey")
+    SOLUTION_SUFFIX - The solution name suffix used for resource naming
+    
+Optional Environment Variables (custom configuration):
+    FABRIC_WORKSPACE_NAME - Custom name for the Fabric workspace (defaults to "Real-Time Intelligence for Operations - {suffix}")
+    FABRIC_WORKSPACE_ADMINISTRATORS - Comma-separated list of workspace administrator identities (UPNs or GUIDs, optional)
+    FABRIC_EVENTHOUSE_NAME - Custom name for the Eventhouse (defaults to "rti_eventhouse_{suffix}")
+    FABRIC_EVENTHOUSE_DATABASE_NAME - Custom name for the Eventhouse database (defaults to "rti_kqldb_{suffix}")
+    FABRIC_EVENT_HUB_CONNECTION_NAME - Custom name for the Event Hub connection (defaults to "rti_eventhub_connection_{suffix}")
+    FABRIC_RTIDASHBOARD_NAME - Custom name for the real-time dashboard (defaults to "rti_dashboard_{suffix}")
+    FABRIC_EVENTSTREAM_NAME - Custom name for the Eventstream (defaults to "rti_eventstream_{suffix}")
+    FABRIC_ACTIVATOR_NAME - Custom name for the Activator (defaults to "rti_activator_{suffix}")
+    FABRIC_ACTIVATOR_ALERTS_EMAIL - Email address for activator alerts (defaults to "alerts@contoso.com")
 """
 
 import os
@@ -41,70 +55,19 @@ from datetime import datetime
 sys.path.append(os.path.dirname(__file__))
 
 # Import pipeline functions
+from fabric_auth import authenticate, authenticate_workspace
 from fabric_workspace import setup_workspace
+from fabric_workspace_admins import setup_workspace_administrators
 from fabric_eventhouse import setup_eventhouse  
 from fabric_database import setup_fabric_database
 from fabric_data_ingester import load_data_to_fabric
-from fabric_event_hub import setup_eventhub_connection
+from fabric_eventhub import setup_eventhub_connection
 from fabric_real_time_dashboard import setup_real_time_dashboard
 from fabric_eventstream import create_eventstream
 from fabric_activator import create_activator
 from fabric_eventstream_definition import update_eventstream_definition
 from fabric_activator_definition import update_activator_definition
-
-def execute_step(step_num: int, total_steps: int, description: str, func, **kwargs):
-    """
-    Execute a single pipeline step.
-    
-    Args:
-        step_num: Current step number
-        total_steps: Total number of steps
-        description: Description of what this step does
-        func: Function to execute
-        **kwargs: Arguments to pass to the function
-        
-    Returns:
-        Function result, or None if failed
-    """
-    print(f"\n📋 Step {step_num}/{total_steps}: {description}")
-    print(f"🚀 Executing: {func.__name__}")
-    
-    if kwargs:
-        args_str = ", ".join([f"{k}={v}" for k, v in kwargs.items() if "key" not in k.lower()])
-        print(f"   Parameters: {args_str}")
-
-    try:
-        result = func(**kwargs)
-        print(f"✅ Successfully completed: {func.__name__}")
-        return result
-            
-    except Exception as e:
-        print(f"❌ Exception while executing {func.__name__}: {e}")
-        return None
-
-def print_summary(executed_steps: list, failed_step: str = None):
-    """Print execution summary."""
-    print("\n" + "="*60)
-    print("📊 EXECUTION SUMMARY")
-    print("="*60)
-    
-    if executed_steps:
-        print("✅ Successfully executed functions:")
-        for step in executed_steps:
-            print(f"   ✓ {step}")
-    
-    if failed_step:
-        print(f"\n❌ Failed at function: {failed_step}")
-        print(f"\n💡 To resume from failed point, fix the issue and re-run the deploy_fabric_rti.py script")
-    else:
-        print(f"\n🎉 All {len(executed_steps)} functions completed successfully!")
-
-def get_required_env_var(var_name: str) -> str:
-    value = os.getenv(var_name)
-    if not value:
-        print(f"❌ Missing required environment variable: {var_name}")
-        sys.exit(1)
-    return value
+from fabric_common_utils import get_required_env_var, print_step, print_steps_summary
 
 def main():
     # Calculate repository root directory (3 levels up from this script)
@@ -121,6 +84,7 @@ def main():
     event_hub_namespace_name = get_required_env_var("AZURE_EVENT_HUB_NAMESPACE_NAME")
     event_hub_authorization_rule_name = os.getenv("AZURE_EVENT_HUB_AUTHORIZATION_RULE_NAME", "RootManageSharedAccessKey")
     workspace_name = os.getenv("FABRIC_WORKSPACE_NAME", f"Real-Time Intelligence for Operations - {solution_suffix}")
+    workspace_administrators = os.getenv("FABRIC_WORKSPACE_ADMINISTRATORS")
     eventhouse_name = os.getenv("FABRIC_EVENTHOUSE_NAME", f"rti_eventhouse_{solution_suffix}")
     eventhouse_database_name = os.getenv("FABRIC_EVENTHOUSE_DATABASE_NAME", f"rti_kqldb_{solution_suffix}")
     event_hub_connection_name = os.getenv("FABRIC_EVENT_HUB_CONNECTION_NAME", f"rti_eventhub_connection_{solution_suffix}")
@@ -128,10 +92,8 @@ def main():
     eventstream_name = os.getenv("FABRIC_EVENTSTREAM_NAME", f"rti_eventstream_{solution_suffix}")
     activator_name = os.getenv("FABRIC_ACTIVATOR_NAME", f"rti_activator_{solution_suffix}")
     activator_alerts_email = os.getenv("FABRIC_ACTIVATOR_ALERTS_EMAIL", "alerts@contoso.com")
-
-    # The database will be created with the eventhouse and then renamed to the desired name
-    # A database of the same name as the eventhouse is auto-created when creating an eventhouse
-    # We will rename it to the desired database name using the KQL database API
+    
+    # Show initialization summary
     print(f"🏭 {solution_name} Initialization")
     print("="*60)
     print(f"Capacity: {capacity_name}")
@@ -147,167 +109,268 @@ def main():
     print(f"Start time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("="*60)
     
+    # Authenticate Fabric API client once
+    print("\n🔐 Authenticating Fabric API client...")
+    fabric_client = authenticate()
+    if not fabric_client:
+        print("❌ Failed to authenticate with Fabric APIs")
+        sys.exit(1)
+    print("✅ Authentication successful")
+    
     executed_steps = []
     
-    workspace_result = execute_step(
-        1, 10, "Setting up Fabric workspace and capacity assignment",
-        setup_workspace,
-        capacity_name=capacity_name,
-        workspace_name=workspace_name
-    )
-    if workspace_result is None:
-        print_summary(executed_steps, failed_step="setup_workspace")
+    # Step 1: Setup workspace
+    print_step(1, 11, "Setting up Fabric workspace and capacity assignment", capacity_name=capacity_name, workspace_name=workspace_name)
+    try:
+        workspace_result = setup_workspace(
+            fabric_client=fabric_client,
+            capacity_name=capacity_name,
+            workspace_name=workspace_name
+        )
+        if workspace_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, ["setup_workspace"])
+            sys.exit(1)
+        print(f"✅ Successfully completed: setup_workspace")
+        executed_steps.append("setup_workspace")
+        workspace_id = workspace_result.get('id')
+    except Exception as e:
+        print(f"❌ Exception while executing setup_workspace: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("setup_workspace")
-    workspace_id = workspace_result.get('id')
     
-    eventhouse_result = execute_step(
-        2, 10, "Setting up Fabric Eventhouse",
-        setup_eventhouse,
-        eventhouse_name=eventhouse_name,
-        workspace_id=workspace_id,
-        database_name=eventhouse_database_name
-    )
-    if eventhouse_result is None:
-        print_summary(executed_steps, failed_step="setup_eventhouse")
+    # Create workspace-specific client for subsequent operations
+    print("\n🔐 Creating workspace-specific Fabric API client...")
+    workspace_client = authenticate_workspace(workspace_id)
+    if not workspace_client:
+        print("❌ Failed to authenticate workspace-specific Fabric API client")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("setup_eventhouse")
+    print("✅ Workspace-specific authentication successful")
+    
+    # Step 2: Setup workspace administrators
+    print_step(2, 11, "Setting up Fabric workspace administrators", workspace_id=workspace_id, admin_list=workspace_administrators or "None")
+    
+    try:
+        administrators_result = setup_workspace_administrators(
+            workspace_client=workspace_client,
+            fabric_admins_csv=workspace_administrators
+        )
+        if administrators_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: setup_workspace_administrators")
+        executed_steps.append("setup_workspace_administrators")
+    except Exception as e:
+        print(f"❌ Exception while executing setup_workspace_administrators: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+        sys.exit(1)
+    
+    # Step 3: Setup eventhouse
+    print_step(3, 11, "Setting up Fabric Eventhouse", eventhouse_name=eventhouse_name, workspace_id=workspace_id, database_name=eventhouse_database_name)
+    try:
+        eventhouse_result = setup_eventhouse(
+            workspace_client=workspace_client,
+            eventhouse_name=eventhouse_name,
+            database_name=eventhouse_database_name
+        )
+        if eventhouse_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: setup_eventhouse")
+        executed_steps.append("setup_eventhouse")
+    except Exception as e:
+        print(f"❌ Exception while executing setup_eventhouse: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+        sys.exit(1)
 
     kusto_cluster_uri = eventhouse_result.get('properties')['queryServiceUri']
     eventhouse_database_id = eventhouse_result.get('properties').get('databasesItemIds')[0]
     
-    result = execute_step(
-        3, 10, "Setting up Fabric database and table schemas",
-        setup_fabric_database,
-        cluster_uri=kusto_cluster_uri,
-        database_name=eventhouse_database_name
-    )
-    if result is None:
-        print_summary(executed_steps, failed_step="setup_fabric_database")
+    # Step 4: Setup database
+    print_step(4, 11, "Setting up Fabric database and table schemas", cluster_uri=kusto_cluster_uri, database_name=eventhouse_database_name)
+    try:
+        result = setup_fabric_database(
+            cluster_uri=kusto_cluster_uri,
+            database_name=eventhouse_database_name
+        )
+        if result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: setup_fabric_database")
+        executed_steps.append("setup_fabric_database")
+    except Exception as e:
+        print(f"❌ Exception while executing setup_fabric_database: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("setup_fabric_database")
     
-    result = execute_step(
-        4, 10, "Loading sample data into Fabric database",
-        load_data_to_fabric,
-        cluster_uri=kusto_cluster_uri,
-        database_name=eventhouse_database_name,
-        data_path=os.path.join(repo_dir, "infra", "data"),
-        refresh_event_dates=True,
-        overwrite_existing=True
-    )
-    if result is None:
-        print_summary(executed_steps, failed_step="load_data_to_fabric")
+    # Step 5: Load data
+    data_path = os.path.join(repo_dir, "infra", "data")
+    print_step(5, 11, "Loading sample data into Fabric database", cluster_uri=kusto_cluster_uri, database_name=eventhouse_database_name, data_path=data_path)
+    try:
+        result = load_data_to_fabric(
+            cluster_uri=kusto_cluster_uri,
+            database_name=eventhouse_database_name,
+            data_path=data_path,
+            refresh_event_dates=True,
+            overwrite_existing=True
+        )
+        if result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: load_data_to_fabric")
+        executed_steps.append("load_data_to_fabric")
+    except Exception as e:
+        print(f"❌ Exception while executing load_data_to_fabric: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("load_data_to_fabric")
     
-    eventhub_connection_result = execute_step(
-        5, 10, "Setting up Event Hub connection",
-        setup_eventhub_connection,
-        connection_name=event_hub_connection_name,
-        namespace_name=event_hub_namespace_name,
-        event_hub_name=event_hub_name,
-        subscription_id=subscription_id,
-        resource_group_name=resource_group_name,
-        authorization_rule_name=event_hub_authorization_rule_name
-    )
-    if eventhub_connection_result is None:
-        print_summary(executed_steps, failed_step="setup_eventhub_connection")
+    # Step 6: Setup Event Hub connection
+    print_step(6, 11, "Setting up Event Hub connection", connection_name=event_hub_connection_name, namespace_name=event_hub_namespace_name, event_hub_name=event_hub_name)
+    try:
+        eventhub_connection_result = setup_eventhub_connection(
+            fabric_client=fabric_client,
+            connection_name=event_hub_connection_name,
+            namespace_name=event_hub_namespace_name,
+            event_hub_name=event_hub_name,
+            subscription_id=subscription_id,
+            resource_group_name=resource_group_name,
+            authorization_rule_name=event_hub_authorization_rule_name
+        )
+        if eventhub_connection_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: setup_eventhub_connection")
+        executed_steps.append("setup_eventhub_connection")
+        
+        # Extract the connection ID for use in eventstream setup
+        eventhub_connection_id = eventhub_connection_result.get('id') if eventhub_connection_result else None
+    except Exception as e:
+        print(f"❌ Exception while executing setup_eventhub_connection: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("setup_eventhub_connection")
-    
-    # Extract the connection ID for use in eventstream setup
-    eventhub_connection_id = eventhub_connection_result.get('id') if eventhub_connection_result else None
 
+    # Step 7: Setup dashboard
     # Build dashboard file path relative to repository root
     rti_dashboard_file_path = os.path.join(repo_dir, "src", "realTimeDashboard", "RealTimeDashboard.json")
     
-    dashboard_result = execute_step(
-        6, 10, "Setting up Real-time Dashboard",
-        setup_real_time_dashboard,
-        workspace_id=workspace_id,
-        dashboard_title=dashboard_title,
-        rti_dashboard_file_path=rti_dashboard_file_path,
-        cluster_uri=kusto_cluster_uri,
-        eventhouse_database_id=eventhouse_database_id
-    )
-    if dashboard_result is None:
-        print_summary(executed_steps, failed_step="setup_real_time_dashboard")
+    print_step(7, 11, "Setting up Real-time Dashboard", workspace_id=workspace_id, dashboard_title=dashboard_title, cluster_uri=kusto_cluster_uri)
+    try:
+        dashboard_result = setup_real_time_dashboard(
+            workspace_client=workspace_client,
+            workspace_id=workspace_id,
+            dashboard_title=dashboard_title,
+            rti_dashboard_file_path=rti_dashboard_file_path,
+            cluster_uri=kusto_cluster_uri,
+            eventhouse_database_id=eventhouse_database_id
+        )
+        if dashboard_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: setup_real_time_dashboard")
+        executed_steps.append("setup_real_time_dashboard")
+    except Exception as e:
+        print(f"❌ Exception while executing setup_real_time_dashboard: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("setup_real_time_dashboard")
 
-    eventstream_result = execute_step(
-        7, 10, "Creating Eventstream",
-        create_eventstream,
-        workspace_id=workspace_id,
-        eventstream_name=eventstream_name
-    )
-    if eventstream_result is None:
-        print_summary(executed_steps, failed_step="create_eventstream")
+    # Step 8: Create eventstream
+    print_step(8, 11, "Creating Eventstream", workspace_id=workspace_id, eventstream_name=eventstream_name)
+    try:
+        eventstream_result = create_eventstream(
+            workspace_client=workspace_client,
+            eventstream_name=eventstream_name
+        )
+        if eventstream_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: create_eventstream")
+        executed_steps.append("create_eventstream")
+        eventstream_id = eventstream_result.get('id') if eventstream_result else None
+    except Exception as e:
+        print(f"❌ Exception while executing create_eventstream: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("create_eventstream")
-    eventstream_id = eventstream_result.get('id') if eventstream_result else None
 
-    activator_result = execute_step(
-        8, 10, "Creating Activator",
-        create_activator,
-        workspace_id=workspace_id,
-        activator_name=activator_name,
-        activator_description=f"Real-time alerts and notifications for {solution_name}"
-    )
-    if activator_result is None:
-        print_summary(executed_steps, failed_step="create_activator")
+    # Step 9: Create activator
+    print_step(9, 11, "Creating Activator", workspace_id=workspace_id, activator_name=activator_name)
+    try:
+        activator_result = create_activator(
+            workspace_client=workspace_client,
+            activator_name=activator_name,
+            activator_description=f"Real-time alerts and notifications for {solution_name}"
+        )
+        if activator_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: create_activator")
+        executed_steps.append("create_activator")
+        activator_id = activator_result.get('id') if activator_result else None
+    except Exception as e:
+        print(f"❌ Exception while executing create_activator: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("create_activator")
-    activator_id = activator_result.get('id') if activator_result else None
 
+    # Step 10: Update activator definition
     # Build activator file path relative to repository root
     activator_file_path = os.path.join(repo_dir, "src", "activator", "ReflexEntities.json")
     
-    activator_definition_result = execute_step(
-        9, 10, "Updating Activator Definition",
-        update_activator_definition,
-        workspace_id=workspace_id,
-        activator_id=activator_id,
-        activator_file_path=activator_file_path,
-        eventstream_id=eventstream_id,
-        eventstream_name=eventstream_name,
-        activator_alerts_email=activator_alerts_email
-    )
-    if activator_definition_result is None:
-        print_summary(executed_steps, failed_step="update_activator_definition")
+    print_step(10, 11, "Updating Activator Definition", workspace_id=workspace_id, activator_id=activator_id, eventstream_name=eventstream_name)
+    try:
+        activator_definition_result = update_activator_definition(
+            workspace_client=workspace_client,
+            workspace_id=workspace_id,
+            activator_id=activator_id,
+            activator_file_path=activator_file_path,
+            eventstream_id=eventstream_id,
+            eventstream_name=eventstream_name,
+            activator_alerts_email=activator_alerts_email
+        )
+        if activator_definition_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: update_activator_definition")
+        executed_steps.append("update_activator_definition")
+    except Exception as e:
+        print(f"❌ Exception while executing update_activator_definition: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("update_activator_definition")
 
+    # Step 11: Update eventstream definition
     # Build eventstream file path relative to repository root
     eventstream_file_path = os.path.join(repo_dir, "src", "eventstream", "eventstream.json")
     
-    eventstream_definition_result = execute_step(
-        10, 10, "Updating Eventstream Definition",
-        update_eventstream_definition,
-        workspace_id=workspace_id,
-        eventstream_id=eventstream_result.get('id') if eventstream_result else None,
-        eventstream_file_path=eventstream_file_path,
-        eventhouse_database_id=eventhouse_database_id,
-        eventhouse_database_name=eventhouse_database_name,
-        eventhouse_table_name="events",
-        eventhub_connection_id=eventhub_connection_id,
-        source_name=event_hub_name,
-        eventhouse_name=eventhouse_name,
-        stream_name=eventstream_name,
-        activator_name=activator_name,
-        activator_id=activator_id
-    )
-    if eventstream_definition_result is None:
-        print_summary(executed_steps, failed_step="update_eventstream_definition")
+    print_step(11, 11, "Updating Eventstream Definition", workspace_id=workspace_id, eventstream_id=eventstream_id, eventhouse_database_name=eventhouse_database_name)
+    try:
+        eventstream_definition_result = update_eventstream_definition(
+            workspace_client=workspace_client,
+            workspace_id=workspace_id,
+            eventstream_id=eventstream_result.get('id') if eventstream_result else None,
+            eventstream_file_path=eventstream_file_path,
+            eventhouse_database_id=eventhouse_database_id,
+            eventhouse_database_name=eventhouse_database_name,
+            eventhouse_table_name="events",
+            eventhub_connection_id=eventhub_connection_id,
+            source_name=event_hub_name,
+            eventhouse_name=eventhouse_name,
+            stream_name=eventstream_name,
+            activator_name=activator_name,
+            activator_id=activator_id
+        )
+        if eventstream_definition_result is None:
+            print_steps_summary(solution_name, solution_suffix, executed_steps, [])
+            sys.exit(1)
+        print(f"✅ Successfully completed: update_eventstream_definition")
+        executed_steps.append("update_eventstream_definition")
+    except Exception as e:
+        print(f"❌ Exception while executing update_eventstream_definition: {e}")
+        print_steps_summary(solution_name, solution_suffix, executed_steps, [])
         sys.exit(1)
-    executed_steps.append("update_eventstream_definition")
     
     # Success!
     print(f"\n🎉 {solution_name} data initialization completed successfully!")
     print(f"End time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    print_summary(executed_steps)
+    print_steps_summary(solution_name, solution_suffix, executed_steps)
 
     # Construct URLs for the resources
     dashboard_id = dashboard_result.get('id') if dashboard_result else None

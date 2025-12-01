@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Fabric Activator (Reflex) Definition Update Script
+Fabric Activator (Reflex) Definition Update Module
 
-This script updates the definition of an existing Microsoft Fabric Activator (Reflex) in a specified workspace.
+This module provides activator definition update functionality for Microsoft Fabric operations.
 It loads activator configuration from a JSON file, transforms it with dynamic values, encodes it to Base64, 
 and updates the activator using the Fabric API.
 
@@ -19,18 +19,15 @@ Requirements:
     - Existing activator in the workspace
 """
 
-import os
-import sys
-import json
-import base64
 import argparse
+import base64
+import json
+import os
 import re
+import sys
 from typing import Dict, Any, Optional
 
-# Add current directory to path so we can import fabric_api
-sys.path.append(os.path.dirname(__file__))
-
-from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
 def transform_activator_config(activator_config: list,
                               eventstream_id: str = None,
@@ -105,7 +102,7 @@ def transform_activator_config(activator_config: list,
                             definition['instance'] = updated_instance_str
                             
                         except Exception as e:
-                            print(f"   Warning: Could not process instance for email replacement: {e}")
+                            print(f"   Warning: {e}")
         
         if emails_updated > 0:
             print(f"   Updated {emails_updated} email token(s) in activator rules")
@@ -117,7 +114,8 @@ def transform_activator_config(activator_config: list,
     
     return activator_config
 
-def update_activator_definition(workspace_id: str,
+def update_activator_definition(workspace_client: FabricWorkspaceApiClient,
+                              workspace_id: str,
                               activator_id: str,
                               activator_file_path: str,
                               eventstream_id: str = None,
@@ -127,6 +125,7 @@ def update_activator_definition(workspace_id: str,
     Update the definition of an existing Activator (Reflex) in the specified workspace.
     
     Args:
+        workspace_client: Authenticated FabricWorkspaceApiClient instance
         workspace_id: ID of the workspace where the activator exists (required)
         activator_id: ID of the existing activator to update (required)
         activator_file_path: Path to the JSON file containing the activator configuration (required)
@@ -148,13 +147,12 @@ def update_activator_definition(workspace_id: str,
         if not activator_id or not activator_id.strip():
             raise ValueError("activator_id is required and cannot be empty")
         
-        # Initialize the Fabric API client
-        print("🚀 Initializing Fabric API client...")
-        fabric_client = FabricWorkspaceApiClient(workspace_id=workspace_id)
+        # Use provided workspace client
+        print("🔍 Using provided Fabric Workspace API client...")
 
         # Verify the activator exists
         print(f"🔍 Verifying activator exists (ID: {activator_id})...")
-        existing_activator = fabric_client.get_activator_by_id(activator_id)
+        existing_activator = workspace_client.get_activator_by_id(activator_id)
         if not existing_activator:
             print(f"❌ Activator with ID '{activator_id}' not found in workspace")
             raise ValueError(f"Activator with ID '{activator_id}' not found in workspace '{workspace_id}'")
@@ -189,7 +187,7 @@ def update_activator_definition(workspace_id: str,
         # Update the existing activator
         print(f"🔄 Updating activator definition (ID: {activator_id})...")
         
-        update_success = fabric_client.update_activator_definition(
+        update_success = workspace_client.update_activator_definition(
             activator_id=activator_id,
             definition_base64=activator_base64
         )
@@ -198,17 +196,17 @@ def update_activator_definition(workspace_id: str,
             print(f"✅ Successfully updated activator definition")
             
             # Get updated activator information
-            updated_activator = fabric_client.get_activator_by_id(activator_id)
+            updated_activator = workspace_client.get_activator_by_id(activator_id)
             return updated_activator
         else:
             print(f"❌ Failed to update activator definition")
             raise Exception(f"Failed to update activator definition")
         
     except (FabricApiError, json.JSONDecodeError, FileNotFoundError) as e:
-        print(f"❌ Error in activator definition update: {e}")
+        print(f"❌ Error: {e}")
         raise
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"❌ Error: {e}")
         raise
 
 def main():
@@ -262,34 +260,26 @@ Examples:
     # Parse arguments
     args = parser.parse_args()
     
-    print(f"📊 Activator Definition Update Script")
-    print(f"  Workspace ID: {args.workspace_id}")
-    print(f"  Activator ID: {args.activator_id}")
-    print(f"  Activator File: {args.activator_file}")
-    print(f"  Eventstream ID: {args.eventstream_id or '(not provided)'}")
-    print(f"  Eventstream Name: {args.eventstream_name or '(preserve original)'}")
-    print(f"  Activator Alerts Email: {args.activator_alerts_email or '(not provided)'}")
-    print("=" * 60)
-    
     # Execute the main logic
-    try:
-        result = update_activator_definition(
-            workspace_id=args.workspace_id,
-            activator_id=args.activator_id,
-            activator_file_path=args.activator_file,
-            eventstream_id=args.eventstream_id,
-            eventstream_name=args.eventstream_name,
-            activator_alerts_email=args.activator_alerts_email
-        )
-        
-        print(f"\n🎉 Activator definition update completed successfully.")
-        if result:
-            print(f"Activator ID: {result.get('id')}")
-            print(f"Activator Name: {result.get('displayName')}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        exit(1)
+    from fabric_auth import authenticate_workspace
+    
+    workspace_client = authenticate_workspace(args.workspace_id)
+    if not workspace_client:
+        print("❌ Failed to authenticate workspace-specific Fabric API client")
+        sys.exit(1)
+    
+    result = update_activator_definition(
+        workspace_client=workspace_client,
+        workspace_id=args.workspace_id,
+        activator_id=args.activator_id,
+        activator_file_path=args.activator_file_path,
+        eventstream_id=args.eventstream_id,
+        eventstream_name=args.eventstream_name,
+        activator_alerts_email=args.activator_alerts_email
+    )
+    
+    print(f"\n✅ Activator ID: {result.get('id') if result else 'Failed'}")
+    print(f"✅ Activator Name: {result.get('displayName') if result else 'Failed'}")
 
 
 if __name__ == "__main__":

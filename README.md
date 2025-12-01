@@ -112,8 +112,10 @@ az login # Required to use the Azure CLI commands that connect Azure resources t
 # Recommended: set email to recieve alerts
 azd env set FABRIC_ACTIVATOR_ALERTS_EMAIL "myteam@company.com"
 
+
 # Optional: Customize resource names
 azd env set FABRIC_WORKSPACE_NAME "My RTI Workspace"
+azd env set FABRIC_WORKSPACE_ADMINISTRATORS "user@company.com,12345678-1234-abcd-1234-123456789abc" # comma-separated
 azd env set FABRIC_EVENTHOUSE_NAME "my_custom_eventhouse"
 azd env set FABRIC_EVENTHOUSE_DATABASE_NAME "my_custom_kql_db"
 azd env set FABRIC_EVENT_HUB_CONNECTION_NAME "my_eventhub_connection"

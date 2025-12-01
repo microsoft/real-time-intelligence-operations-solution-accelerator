@@ -1,3 +1,20 @@
+#!/usr/bin/env python3
+"""
+Fabric Database Setup Module
+
+This module provides database setup functionality for Microsoft Fabric operations.
+It creates and manages database tables and schemas for manufacturing data.
+
+Usage:
+    python fabric_database.py --cluster-uri "https://cluster.kusto.windows.net" --database "database_name"
+
+Requirements:
+    - Azure CLI authentication or other Azure credentials configured
+    - Kusto client libraries installed
+    - Access to the specified Fabric cluster and database
+"""
+
+import argparse
 import os
 import sys
 from pathlib import Path
@@ -38,7 +55,7 @@ def create_kusto_client(cluster_uri) -> KustoClient:
         return client
     
     except Exception as e:
-        print(f"Error creating Kusto client: {e}")
+        print(f"❌ Error: {e}")
         raise
 
 
@@ -269,7 +286,7 @@ def setup_fabric_database(
         }
     
     except Exception as e:
-        print(f"An unexpected error occurred: {e}")
+        print(f"Error: {e}")
         raise
 
 
@@ -281,5 +298,6 @@ if __name__ == "__main__":
         )
         print(f"\nSetup results: {results['summary']}")
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"\n❌ Unexpected error: {e}")
+        sys.exit(1)
         exit(1)

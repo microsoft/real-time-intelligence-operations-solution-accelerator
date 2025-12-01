@@ -90,7 +90,6 @@ module eventHubNamespace 'br/public:avm/res/event-hub/namespace:0.13.0' = {
       {
         roleDefinitionIdOrName: 'Azure Event Hubs Data Sender'
         principalId: userObjectId
-        principalType: 'User'
       }
     ]
     enableTelemetry: enableTelemetry
@@ -125,7 +124,7 @@ output AZURE_RESOURCE_GROUP string = resourceGroup().name
 output AZURE_FABRIC_CAPACITY_NAME string = fabricCapacity.outputs.name
 
 @description('The identities added as Fabric Capacity Admin members')
-output AZURE_FABRIC_ADMIN_MEMBERS array = fabricTotalAdminMembers
+output AZURE_FABRIC_CAPACITY_ADMINISTRATORS array = fabricTotalAdminMembers
 
 @description('The name of the Event Hub Namespace created for ingestion.')
 output AZURE_EVENT_HUB_NAMESPACE_NAME string = eventHubNamespace.outputs.name

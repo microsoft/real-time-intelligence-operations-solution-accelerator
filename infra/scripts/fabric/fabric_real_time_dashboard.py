@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Fabric Real-Time Dashboard Setup Script
+Fabric Real-Time Dashboard Setup Module
 
-This script creates or updates a Microsoft Fabric KQL (Real-Time) dashboard in a specified workspace.
+This module provides real-time dashboard setup functionality for Microsoft Fabric operations.
+It creates or updates a Microsoft Fabric KQL (Real-Time) dashboard in a specified workspace.
 It loads dashboard configuration from a JSON file, encodes it to Base64, and creates the dashboard
 using the Fabric API.
 
@@ -16,13 +17,15 @@ Requirements:
 """
 
 import argparse
-import json
-import sys
 import base64
+import json
 import os
+import sys
 from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_auth import authenticate_workspace
 
-def setup_real_time_dashboard(workspace_id: str,
+def setup_real_time_dashboard(workspace_client: FabricWorkspaceApiClient,
+                              workspace_id: str,
                               dashboard_title: str,
                               rti_dashboard_file_path: str,
                               cluster_uri: str,
@@ -31,6 +34,7 @@ def setup_real_time_dashboard(workspace_id: str,
     Create or update a Real-Time Dashboard (KQL Dashboard) in the specified workspace.
     
     Args:
+        workspace_client: Authenticated FabricWorkspaceApiClient instance
         workspace_id: ID of the workspace where the dashboard will be created
         dashboard_title: Title/name for the dashboard
         rti_dashboard_file_path: Path to the JSON file containing the dashboard configuration
@@ -44,9 +48,8 @@ def setup_real_time_dashboard(workspace_id: str,
         Exception: If dashboard creation/update fails
     """
     try:
-        # Initialize the Fabric API client
-        print("🚀 Initializing Fabric API client...")
-        fabric_client = FabricWorkspaceApiClient(workspace_id=workspace_id)
+        # Use the provided workspace client
+        print("🔍 Using provided Fabric Workspace API client...")
 
         # Verify the dashboard file exists
         if not os.path.exists(rti_dashboard_file_path):
@@ -74,14 +77,14 @@ def setup_real_time_dashboard(workspace_id: str,
 
         # List all available dashboards to check if one with this title already exists
         print("🔍 Checking for existing dashboards...")
-        existing_dashboard = fabric_client.get_kql_dashboard_by_name(dashboard_title)
+        existing_dashboard = workspace_client.get_kql_dashboard_by_name(dashboard_title)
         
         if existing_dashboard:
             # Update the existing dashboard
             print(f"🔄 Updating existing dashboard '{dashboard_title}' (ID: {existing_dashboard.get('id')})...")
             dashboard_id = existing_dashboard.get('id')
             
-            update_success = fabric_client.update_kql_dashboard_content(
+            update_success = workspace_client.update_kql_dashboard_content(
                 dashboard_id=dashboard_id,
                 dashboard_definition_base64=dashboard_base64
             )
@@ -95,7 +98,7 @@ def setup_real_time_dashboard(workspace_id: str,
         else:
             # Create a new dashboard
             print(f"📊 Creating new dashboard '{dashboard_title}'...")
-            dashboard_result = fabric_client.create_kql_dashboard(
+            dashboard_result = workspace_client.create_kql_dashboard(
                 display_name=dashboard_title,
                 description=f"Real-Time Intelligence Dashboard: {dashboard_title}",
                 dashboard_definition_base64=dashboard_base64
@@ -107,10 +110,10 @@ def setup_real_time_dashboard(workspace_id: str,
             return dashboard_result
         
     except (FabricApiError, json.JSONDecodeError, FileNotFoundError) as e:
-        print(f"❌ Error in dashboard setup: {e}")
+        print(f"❌ Error: {e}")
         raise
     except Exception as e:
-        print(f"❌ Unexpected error: {e}")
+        print(f"❌ Error: {e}")
         raise
 
 def main():
@@ -157,31 +160,23 @@ Examples:
     # Parse arguments
     args = parser.parse_args()
     
-    print(f"📊 Real-Time Dashboard Setup Script")
-    print(f"  Workspace ID: {args.workspace_id}")
-    print(f"  Dashboard Title: {args.dashboard_title}")
-    print(f"  Dashboard File: {args.dashboard_file}")
-    print(f"  Cluster URI: {args.cluster_uri}")
-    print(f"  Database ID: {args.eventhouse_database_id}")
-    print("=" * 60)
+    # Execute the main logic    
+    workspace_client = authenticate_workspace(args.workspace_id)
+    if not workspace_client:
+        print("❌ Failed to authenticate workspace-specific Fabric API client")
+        sys.exit(1)
     
-    # Execute the main logic
-    try:
-        result = setup_real_time_dashboard(
-            workspace_id=args.workspace_id,
-            dashboard_title=args.dashboard_title,
-            rti_dashboard_file_path=args.dashboard_file,
-            cluster_uri=args.cluster_uri,
-            eventhouse_database_id=args.eventhouse_database_id
-        )
-        
-        print(f"\n🎉 Real-Time Dashboard setup completed successfully.")
-        print(f"Dashboard ID: {result.get('id')}")
-        print(f"Dashboard Name: {result.get('displayName')}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        exit(1)
+    result = setup_real_time_dashboard(
+        workspace_client=workspace_client,
+        workspace_id=args.workspace_id,
+        dashboard_title=args.dashboard_title,
+        rti_dashboard_file_path=args.dashboard_file,
+        cluster_uri=args.cluster_uri,
+        eventhouse_database_id=args.eventhouse_database_id
+    )
+    
+    print(f"\n✅ Dashboard ID: {result.get('id')}")
+    print(f"✅ Dashboard Name: {result.get('displayName')}")
 
 
 if __name__ == "__main__":

@@ -8,22 +8,25 @@ Deploy the **Real-Time Intelligence Data Platform** solution accelerator using A
 
 ```bash
 # Clone and navigate to repository
-git clone https://dev.azure.com/CSACTOSOL/DATA%20-%20ACCL%20-%20MAAG%20RTI/_git/data_maag_rti
-cd data_maag_rti
+git clone https://github.com/microsoft/real-time-intelligence-operations-solution-accelerator.git
+cd real-time-intelligence-operations-solution-accelerator
 
 # Authenticate (required)
 azd auth login
 az login
 
+# Recommended: set email to receive alerts
+azd env set FABRIC_ACTIVATOR_ALERTS_EMAIL "myteam@company.com"
+
 # Optional: Customize resource names
 azd env set FABRIC_WORKSPACE_NAME "My RTI Workspace"
+azd env set FABRIC_WORKSPACE_ADMINISTRATORS "user@company.com,12345678-1234-abcd-1234-123456789abc" # comma-separated
 azd env set FABRIC_EVENTHOUSE_NAME "my_custom_eventhouse"
 azd env set FABRIC_EVENTHOUSE_DATABASE_NAME "my_custom_kql_db"
 azd env set FABRIC_EVENT_HUB_CONNECTION_NAME "my_eventhub_connection"
 azd env set FABRIC_RTIDASHBOARD_NAME "My Custom Dashboard"
 azd env set FABRIC_EVENTSTREAM_NAME "my_custom_eventstream"
 azd env set FABRIC_ACTIVATOR_NAME "my_custom_activator"
-azd env set FABRIC_ACTIVATOR_ALERTS_EMAIL "myteam@company.com"
 
 # Deploy everything
 azd up
@@ -99,7 +102,7 @@ The deployment executes in two coordinated phases using Azure Developer CLI orch
    - **Azure Event Hub**: Real-time event ingestion service with namespace and authorization rules
    - **Resource Group**: Container for all Azure resources with proper tagging
 
-**Phase 2: Fabric Workspace Setup** - Azure Developer CLI runs [`Run-FabricRTIPythonScript.ps1`](../infra/scripts/utils/Run-FabricRTIPythonScript.ps1) orchestrator which manages Python environment setup and executes [`deploy_fabric_rti.py`](../infra/scripts/fabric/deploy_fabric_rti.py) to intelligently manage Fabric resources:
+**Phase 2: Fabric Workspace Setup** - Azure Developer CLI runs [`Run-PythonScript.ps1`](../infra/scripts/utils/Run-PythonScript.ps1) orchestrator which manages Python environment setup and executes [`deploy_fabric_rti.py`](../infra/scripts/fabric/deploy_fabric_rti.py) to intelligently manage Fabric resources:
    - **Workspace**: Detects existing workspace by name or creates new one, assigns to specified capacity
    - **Eventhouse**: Creates real-time analytics database with KQL capabilities and auto-generated database
    - **KQL Database**: Sets up tables and schema for event data with proper indexing
@@ -111,6 +114,8 @@ The deployment executes in two coordinated phases using Azure Developer CLI orch
    - **Administrators**: Adds new workspace administrators without removing existing ones
 
 The deployment orchestration coordinates both phases through Azure Developer CLI hooks, passing Bicep outputs as environment variables to the Python scripts, and ensuring proper sequencing with comprehensive error handling and rollback capabilities.
+
+**Environment Cleanup Process** - When running `azd down`, Azure Developer CLI executes [`delete_fabric_rti.py`](../infra/scripts/fabric/delete_fabric_rti.py) via a `predown` hook to safely remove Fabric workspace components before deprovisioning Azure infrastructure, ensuring a clean and complete cleanup process.
 
 ---
 
@@ -278,6 +283,7 @@ The solution accelerator provides flexible configuration options to customize yo
 | Parameter | Environment Variable | Description | Default | Example |
 |-----------|---------------------|-------------|---------|---------|
 | **Workspace Name** | `FABRIC_WORKSPACE_NAME` | Custom name for the Fabric workspace | `Real-Time Intelligence for Operations - <env-name><suffix>` | `"My RTI Workspace"` |
+| **Workspace Administrators** | `FABRIC_WORKSPACE_ADMINISTRATORS` | Comma-separated list of workspace administrator identities (UPNs or GUIDs) | None | `"user@company.12345678-1234-abcd-1234-123456789abc"` |
 | **Eventhouse Name** | `FABRIC_EVENTHOUSE_NAME` | Name for the Fabric Eventhouse | `rti_eventhouse_<env-name><suffix>` | `"my_custom_eventhouse"` |
 | **KQL Database Name** | `FABRIC_EVENTHOUSE_DATABASE_NAME` | Name for the KQL database | `rti_kqldb_<env-name><suffix>` | `"my_custom_kql_db"` |
 | **Event Hub Connection** | `FABRIC_EVENT_HUB_CONNECTION_NAME` | Name for Event Hub connection | `rti_eventhub_connection_<env-name><suffix>` | `"my_eventhub_connection"` |
@@ -305,6 +311,7 @@ These variables are automatically set by the deployment process (Bicep outputs) 
 ```bash
 # Set custom names
 azd env set FABRIC_WORKSPACE_NAME "My RTI Workspace"
+azd env set FABRIC_WORKSPACE_ADMINISTRATORS "user@company.com,12345678-1234-abcd-1234-123456789abc"
 azd env set FABRIC_EVENTHOUSE_NAME "my_custom_eventhouse"
 azd env set FABRIC_EVENTHOUSE_DATABASE_NAME "my_custom_kql_db"
 azd env set FABRIC_EVENT_HUB_CONNECTION_NAME "my_eventhub_connection"
@@ -350,15 +357,16 @@ When you no longer need your deployed environment, Azure Developer CLI provides 
 
 The `azd down` command orchestrates a complete environment cleanup process that:
 
-1. **Removes Fabric Workspace**: Safely deletes the Microsoft Fabric workspace and all associated items
-2. **Deprovisions Azure Resources**: Removes all Azure infrastructure components including Event Hub and Fabric Capacity
-3. **Preserves Local Environment**: Keeps your local development environment and configurations intact
+1. **Removes Fabric Workspace Components**: Executes [`delete_fabric_rti.py`](../infra/scripts/fabric/delete_fabric_rti.py) via `predown` hook to safely delete workspace connections and components
+2. **Deletes Fabric Workspace**: Removes the Microsoft Fabric workspace and all associated items 
+3. **Deprovisions Azure Resources**: Removes all Azure infrastructure components including Event Hub and Fabric Capacity
+4. **Preserves Local Environment**: Keeps your local development environment and configurations intact
 
 **Complete cleanup commands:**
 
 ```bash
 # Navigate to your solution directory
-cd data_maag_rti
+cd real-time-intelligence-operations-solution-accelerator
 
 # Remove everything deployed by azd up
 azd down --force --purge

@@ -20,19 +20,16 @@ import sys
 import argparse
 from typing import Optional
 
-# Add current directory to path so we can import fabric_api
-sys.path.append(os.path.dirname(__file__))
+from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
 
-from fabric_api import FabricWorkspaceApiClient, FabricApiError
-
-def create_activator(workspace_id: str,
+def create_activator(workspace_client: FabricWorkspaceApiClient,
                     activator_name: str = "rti_activator",
                     activator_description: str = None):
     """
     Create an Activator (Reflex) in the specified workspace if it doesn't exist.
     
     Args:
-        workspace_id: ID of the workspace where the activator will be created (required)
+        workspace_client: Authenticated FabricWorkspaceApiClient instance
         activator_name: Name for the activator (required)
         activator_description: Description for the activator (optional)
 
@@ -51,13 +48,12 @@ def create_activator(workspace_id: str,
         if not activator_name:
             raise ValueError("activator_name cannot be empty after stripping")
         
-        # Initialize the Fabric API client
-        print("🚀 Initializing Fabric API client...")
-        fabric_client = FabricWorkspaceApiClient(workspace_id=workspace_id)
+        # Use provided workspace client
+        print("🔍 Using provided Fabric Workspace API client...")
 
         # Check if activator already exists
         print("🔍 Checking for existing activator...")
-        existing_activator = fabric_client.get_activator_by_name(activator_name)
+        existing_activator = workspace_client.get_activator_by_name(activator_name)
         
         if existing_activator:
             print(f"✅ Activator '{activator_name}' already exists (ID: {existing_activator.get('id')})")
@@ -65,7 +61,7 @@ def create_activator(workspace_id: str,
         else:
             # Create a new activator with minimal configuration
             print(f"📊 Creating new activator '{activator_name}'...")
-            activator_result = fabric_client.create_activator(
+            activator_result = workspace_client.create_activator(
                 display_name=activator_name,
                 description=activator_description or f"Activator: {activator_name}"
             )
@@ -118,27 +114,24 @@ Examples:
     # Parse arguments
     args = parser.parse_args()
     
-    print(f"📊 Activator Creation Script")
-    print(f"  Workspace ID: {args.workspace_id}")
-    print(f"  Activator Name: {args.activator_name or '(not provided)'}")
-    print(f"  Description: {args.activator_description or '(not provided)'}")
-    print("=" * 60)
-    
     # Execute the main logic
-    try:
-        result = create_activator(
-            workspace_id=args.workspace_id,
-            activator_name=args.activator_name,
-            activator_description=args.activator_description
-        )
-        
-        print(f"\n🎉 Activator creation completed successfully.")
-        print(f"Activator ID: {result.get('id')}")
-        print(f"Activator Name: {result.get('displayName')}")
-        
-    except Exception as e:
-        print(f"Error: {e}")
-        exit(1)
+    base_client = FabricApiClient()
+    from fabric_auth import authenticate_workspace
+    
+    workspace_client = authenticate_workspace(args.workspace_id)
+    if not workspace_client:
+        print("❌ Failed to authenticate workspace-specific Fabric API client")
+        sys.exit(1)
+    
+    result = create_activator(
+        workspace_client=workspace_client,
+        workspace_id=args.workspace_id,
+        activator_name=args.activator_name,
+        activator_description=args.activator_description
+    )
+    
+    print(f"\n✅ Activator ID: {result.get('id')}")
+    print(f"✅ Activator Name: {result.get('displayName')}")
 
 
 if __name__ == "__main__":
