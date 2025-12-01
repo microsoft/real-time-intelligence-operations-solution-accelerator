@@ -1,6 +1,6 @@
 # Real-Time Intelligence for Operations Solution Accelerator
 
-This solution accelerator provides the architecture and working solution for real-time intelligence for operations. We used simulated manufacturing facility asset data for the process flow. Historical and real-time performance measures such as speed, vibration, temperature, humidity, and defect probability are reported in a real-time intelligence dashboard. As real-time events are streamed in, anomalies are detected with notifications sent to a specified Outlook email account. The solution includes a customized Fabric Data Agent that provides a chat experience to answer users' questions with intelligence derived from the data. 
+This solution accelerator provides the architecture and working solution for real-time intelligence for operations. We used simulated manufacturing facility asset data for the process flow.  As real-time events are streamed in, anomalies are detected with notifications sent to a specified Outlook email account. The solution includes a customized Fabric Data Agent that provides a chat experience to answer users' questions with intelligence derived from the data. 
 
 **Key use cases include:**
 
@@ -21,7 +21,7 @@ This solution accelerator provides the architecture and working solution for rea
 Solution overview
 </h2>
 
-This solution accelerator provides a working solution for manufacturing asset performance monitoring, real-time anomaly detection, and anomaly notification. The manufacturing facility telemetry data is synthetically generated with the `Telemetry Data Simulator`. This architecture can be extended to other industries as long as the appropriate data is generated or actual operations data is ingested into the `Event Hub`, and related component configurations and Kusto Query Language (KQL) code are updated accordingly. For a brief description of the architecture, please refer to [Solution Architecture Overview](./docs/TechnicalArchitecture.md).
+This solution accelerator provides a working solution for manufacturing asset performance monitoring, real-time anomaly detection, and anomaly notification. The manufacturing facility telemetry data is synthetically generated with the `Telemetry Data Simulator`. This architecture can be extended to other industries as long as the appropriate data is generated or actual operations data is ingested into the `Azure Event Hub`, and related component configurations and Kusto Query Language (KQL) code are updated accordingly. For a brief description of the architecture, please refer to [Solution Architecture Overview](./docs/TechnicalArchitecture.md).
 
 ### Solution architecture
 
@@ -56,18 +56,18 @@ If you'd like to customize the solution accelerator, here are some common areas 
 ### Key features
 <details>
   <summary>Click to learn more about the key features this solution enables</summary> 
-  
-  - **Fabric Data Ingestion Program and Real Time Event Simulator** <br/>Two data simulators: (1) One-time batch data simulator to generate or re-generate up to 90 days or specific periods of historical sensor data, and load to Fabric EventHouse (2) real time telemetry data simulator to generate real time up to the moment events that are streamed into Azure Event Hub. For more details, please refer to [Fabric Data Ingestion Guide](./docs/FabricDataIngestion.md) and  [Event Simulator Guide](./docs/EventSimulatorGuide.md).
 
-  - **Real Time Intelligence Operations Dashboard** <br/>Real-Time Intelligence Operations Dashboard provides overview on how manufacturing assets are performing, and showing individual sensor data trends such as Speed, Vibration, Temperature, Humidity, and Defect Probability. For details, please refer to [Real Time Intelligence Dashboard Guide](./docs/RealTimeIntelligenceDashboardGuide.md).
+  - **Fabric Data Ingestion Program and Real Time Event Simulator** <br/>One-time batch historical data simulator and real-time telemetry data simulator are provided. For more details, please refer to [Fabric Data Ingestion Guide](./docs/FabricDataIngestion.md) and  [Event Simulator Guide](./docs/EventSimulatorGuide.md).
+
+  - **Real Time Intelligence Operations Dashboard** <br/>Real-Time Intelligence Operations Dashboard provides overview on how manufacturing assets are performing, and showing individual sensor data trends. For details, please refer to [Real Time Intelligence Dashboard Guide](./docs/RealTimeIntelligenceDashboardGuide.md).
 
   - **Fabric EventHouse with Customized Fabric Data Agent**
 
-    Fabric EventHouse hosts manufacturing telemetry data. You can use conversational interface powered by Fabric Data Agent for live operational queries.  Please refer to [Fabric Data Agent Guide](./docs/FabricDataAgentGuide.md) for details. 
+    Manufacturing telemetry data is hosted in Fabric EventHouse. You can use conversational interface powered by Fabric Data Agent for live operational queries.  For details, please refer to [Fabric Data Agent Guide](./docs/FabricDataAgentGuide.md).
 
   - **Anomaly Detection and Alerts through Fabric Activator** <br/>Microsoft Activator is configured with anomaly detection rules that triggers outlook email notifications when an anomaly occurs. For more details, please refer to [Activator Guide](./docs/ActivatorGuide.md).
 
-  - **Useful Data Analysis and Performance Metrics KQL Code** <br/>Reusable KQL code is provided to get you started quickly. For more details please refer to [Data Analysis KQL Guide](./src/kql/data_analysis/data_analysis_guide.md) and [Performance Metrics KQL Queryset Guide](./src/kql/kql_queryset/kql_queryset_guide.md). 
+  - **Useful Data Analysis and Performance Metrics KQL Code** <br/>Reusable KQL code is provided to get you started quickly. For details, please refer to [Data Analysis KQL Guide](./src/kql/data_analysis/data_analysis_guide.md) and [Performance Metrics KQL Queryset Guide](./src/kql/kql_queryset/kql_queryset_guide.md). 
 
   - **Demonstrator's Guide** <br/> After successful deployment of the solution accelerator, you or your colleague who has required access can demonstrate this solution by following the steps outlined in the [Demonstrator's Guide](./docs/DemonstratorGuide.md).
 
@@ -160,13 +160,13 @@ Business use case
 </h2>
 Use cases can be summarized as below:
 
-- For manufacturing plants, the plant manager or other business stakeholders can use the Fabric Data Agent to get business and operations intelligence quickly without the need to understand or create query code. For details, please refer to [Fabric Data Agent Guide](./docs/FabricDataAgentGuide.md) for details. 
+- For manufacturing plants, the plant manager or other business stakeholders can use the Fabric Data Agent to get business and operations intelligence quickly without the need to create query code. For details, please refer to [Fabric Data Agent Guide](./docs/FabricDataAgentGuide.md). 
 
-- For manufacturing plants, the designated operations team receives email notification when anomaly occurs. The solution can also be configured to send anomaly notifications to a Teams Channel. Please refer to [Activator Guide](./docs/ActivatorGuide.md) for rules configuration options (Email or Teams).
+- For manufacturing plants, the designated operations team receives email notification when anomaly occurs. The solution can also be configured to send anomaly notifications to a Teams Channel. For rule configuration options (Email or Teams), please refer to [Activator Guide](./docs/ActivatorGuide.md).
 
-- Plant manager uses real-time dashboard to analyze manufacturing plant asset performance, key telemetry data over time, with specified time periods such as last hour, last 12 hours, last 3 days, etc. 
+- Plant manager uses real-time dashboard to analyze manufacturing plant asset performance, key telemetry data over time.
 
-  The image below shows the first page of the real-time intelligence operations dashboard, which displays sensor status, quality metrics, and individual sensor data trends. The second page shows additional information such as daily anomaly rate by asset, asset maintenance status, and fault correlations.  Please refer to [Real Time Intelligence Operations Dashboard Guide](./docs/RealTimeIntelligenceDashboardGuide.md) for more details. 
+  The image below shows the first page of the real-time intelligence operations dashboard, which displays sensor status, quality metrics, and individual sensor data trends. The second page shows additional information such as daily anomaly rate by asset, asset maintenance status, and fault correlations.  For more details, please refer to [Real Time Intelligence Operations Dashboard Guide](./docs/RealTimeIntelligenceDashboardGuide.md). 
 
 | ![image](./docs/images/readme/rti-dashboard.png) |
 | ------------------------------------------------ |
@@ -180,16 +180,16 @@ Use cases can be summarized as below:
   <summary>Click to learn more about what value this solution provides</summary>
 
   -  **The solution provides multiple business functions with a simple architecture** <br/>
-  The deployed solution provides real time telemetry data monitoring, analysis, summarization, graphical reports, anomaly detection and notifications with a quick to deploy, secure, and simple architecture. 
+    The deployed solution provides real time telemetry data monitoring, analysis, summarization, graphical reports, anomaly detection and notifications with a quick to deploy, secure, and simple architecture. 
 
   - **A Fabric Data Agent getting quick business intelligence without programming effort.** <br/>
-  The Fabric Data Agent can be quickly configured with instructions delivered in this solution accelerator, providing quick and accurate insights from data effortlessly. No programming skills are necessary. 
+    The Fabric Data Agent can be quickly configured with instructions delivered in this solution accelerator, providing quick and accurate insights from data effortlessly. No programming skills are necessary. 
 
   - **Real Time Intelligence for Operations Dashboard**<br/>
     The deployed solution accelerator provides a working architecture with best practices, security, components integration, and real-time intelligence for operations dashboard. 
 
   - **Configurable Activator providing anomaly detection and notifications** <br/>
-  The deployed and configurable Activator provides real time anomaly detection and alert notifications out of the box. The rules are easily configurable. 
+    The deployed and configurable Activator provides real time anomaly detection and alert notifications out of the box. The rules are easily configurable. 
 
   - **Reusable and updatable real time event simulator and batch data update program** <br/>
 
