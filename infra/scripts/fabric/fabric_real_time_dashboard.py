@@ -21,7 +21,8 @@ import base64
 import json
 import os
 import sys
-from fabric_api import FabricApiClient, FabricWorkspaceApiClient, FabricApiError
+from fabric_api import FabricWorkspaceApiClient, FabricApiError
+from fabric_auth import authenticate_workspace
 
 def setup_real_time_dashboard(workspace_client: FabricWorkspaceApiClient,
                               workspace_id: str,
@@ -159,10 +160,7 @@ Examples:
     # Parse arguments
     args = parser.parse_args()
     
-    # Execute the main logic
-    base_client = FabricApiClient()
-    from fabric_auth import authenticate_workspace
-    
+    # Execute the main logic    
     workspace_client = authenticate_workspace(args.workspace_id)
     if not workspace_client:
         print("❌ Failed to authenticate workspace-specific Fabric API client")

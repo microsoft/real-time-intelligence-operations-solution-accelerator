@@ -13,7 +13,6 @@ Requirements:
 """
 
 import argparse
-import sys
 from fabric_api import FabricApiClient, FabricWorkspaceApiClient
 
 def authenticate():
@@ -48,35 +47,3 @@ def authenticate_workspace(workspace_id: str):
     except Exception as e:
         print(f"❌ Error creating workspace client: {e}")
         return None
-
-def main():
-    """Main function to handle command line arguments and execute authentication."""
-    parser = argparse.ArgumentParser(
-        description="Test Fabric API authentication",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python fabric_auth.py
-  python fabric_auth.py --workspace-id "12345678-1234-1234-1234-123456789012"
-        """
-    )
-    
-    parser.add_argument(
-        "--workspace-id",
-        help="Optional workspace ID to test workspace-specific authentication"
-    )
-    
-    # Parse arguments
-    args = parser.parse_args()
-    
-    # Execute the main logic
-    result = authenticate()
-    print(f"\n✅ Base Authentication: {'Success' if result else 'Failed'}")
-    
-    if args.workspace_id and result:
-        workspace_result = authenticate_workspace(args.workspace_id)
-        print(f"✅ Workspace Authentication: {'Success' if workspace_result else 'Failed'}")
-
-
-if __name__ == "__main__":
-    main()
