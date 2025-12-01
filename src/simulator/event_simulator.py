@@ -52,14 +52,19 @@ import signal
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+import sys
 from pathlib import Path
+
+# Add parent directory to Python path to allow imports from sibling directories
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from datetime import datetime, timezone
 from typing import List, Dict, Optional
 
 # Import our project classes
 from entities.event import Event
 from entities.asset import AssetType
-from event_hub_service import EventHubService
+from simulator.event_hub_service import EventHubService
 from azd_env_loader import AZDEnvironmentLoader
 
 class AssetSimulator:

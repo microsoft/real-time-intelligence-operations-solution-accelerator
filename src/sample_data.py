@@ -193,7 +193,7 @@ def generate_sample_data(
     
     try:
         # Set path as a relative directory in the current src directory
-        path = "../../infra/data"
+        path = "../infra/data"
         
         print(f"Generating sample data...")
         print(f"Output directory: {os.path.abspath(path)}")

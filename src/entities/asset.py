@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import random
 import uuid
-from event import Event
+from entities.event import Event
 
 @dataclass
 class Asset:
