@@ -1,6 +1,8 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
 
-name: real-time-ingestion-with-fabric
+name: real-time-intelligence-operations-solution-accelerator
+metadata:
+  template: real-time-intelligence-operations-solution-accelerator@1.0
 
 requiredVersions:
   azd: ">1.20.0"
