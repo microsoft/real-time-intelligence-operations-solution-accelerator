@@ -30,6 +30,8 @@ env:
   AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
   AZURE_ENV_NAME_DEV: ${{ vars.AZURE_ENV_NAME_DEV }}
   AZURE_RESOURCE_GROUP_NAME_DEV: 'rg-${{ vars.AZURE_ENV_NAME_DEV }}'
+  # Optional environment variables
+  FABRIC_WORKSPACE_ADMINISTRATORS: ${{ vars.FABRIC_WORKSPACE_ADMINISTRATORS }}
 
 jobs:
   build:
@@ -125,9 +127,6 @@ jobs:
           AZURE_FABRIC_CAPACITY_NAME: ${{ steps.bicep-deploy.outputs.AZURE_FABRIC_CAPACITY_NAME }}
           AZURE_EVENT_HUB_NAME: ${{ steps.bicep-deploy.outputs.AZURE_EVENT_HUB_NAME }}
           AZURE_EVENT_HUB_NAMESPACE_NAME: ${{ steps.bicep-deploy.outputs.AZURE_EVENT_HUB_NAMESPACE_NAME }}
-          
-          # Optional environment variables
-          FABRIC_WORKSPACE_ADMINISTRATORS: ${{ vars.FABRIC_WORKSPACE_ADMINISTRATORS }}
         run: |
           echo "Running RTI fabric provisioning script..."
           echo "Environment configuration:"
