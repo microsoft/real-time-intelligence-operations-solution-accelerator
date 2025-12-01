@@ -2,7 +2,6 @@ import json
 
 try:
     from azure.eventhub import EventHubProducerClient, EventData
-    from azure.eventhub.exceptions import EventHubError
     from azure.identity import DefaultAzureCredential
 except ImportError:
     print("❌ Error: azure-eventhub and azure-identity packages are required.")

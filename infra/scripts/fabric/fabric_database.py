@@ -27,9 +27,6 @@ sys.path.insert(0, str(scripts_dir))
 from azure.identity import DefaultAzureCredential
 from azure.kusto.data import KustoClient, KustoConnectionStringBuilder, ClientRequestProperties
 from azure.kusto.data.exceptions import KustoServiceError
-from event import Event
-from asset import Asset
-
 
 def create_kusto_client(cluster_uri) -> KustoClient:
     """
@@ -189,8 +186,16 @@ def get_table_schemas():
             LocationId: int,
             PlantType: string
         )""",
-        
-        "assets": Asset.get_table_schema(),
+
+        # NOTE: schema here matches against entity Asset class in src/entities/asset.py
+        "assets": """(
+            Id: string,
+            Name: string,
+            SiteId: int,
+            Type: string,
+            SerialNumber: string,
+            MaintenanceStatus: string
+        )""",
         
         "products": """(
             Id: string,
@@ -207,7 +212,19 @@ def get_table_schemas():
             IsoCurrencyCode: string
         )""",
 
-        "events": Event.get_table_schema()
+        # NOTE: schema here matches against entity Event class in src/entities/event.py
+        "events": """(
+            Id: string,
+            AssetId: string,
+            ProductId: string,
+            Timestamp: datetime,
+            BatchId: string,
+            Vibration: real,
+            Temperature: real,
+            Humidity: real,
+            Speed: real,
+            DefectProbability: real
+        )"""
     }
 
 

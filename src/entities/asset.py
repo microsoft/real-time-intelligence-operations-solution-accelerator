@@ -22,18 +22,7 @@ class Asset:
             "SerialNumber": self.SerialNumber,
             "MaintenanceStatus": self.MaintenanceStatus
         }
-
-    @staticmethod
-    def get_table_schema() -> str:
-        return """(
-            Id: string,
-            Name: string,
-            SiteId: int,
-            Type: string,
-            SerialNumber: string,
-            MaintenanceStatus: string
-        )"""
-    
+        
     @staticmethod
     def get_type_map():
         return {

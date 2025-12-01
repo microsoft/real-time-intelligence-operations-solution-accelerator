@@ -3,8 +3,8 @@ import uuid
 from datetime import datetime, timedelta, timezone
 import pandas as pd
 import os
-from event import Event
-from asset import Asset, AssetType
+from entities.event import Event
+from entities.asset import Asset, AssetType
 
 def generate_locations():
     city_country_map = {
@@ -192,8 +192,8 @@ def generate_sample_data(
     random.seed(random_seed)
     
     try:
-        # Set path as a relative directory in the current script directory
-        path = "../data"
+        # Set path as a relative directory in the current src directory
+        path = "../../infra/data"
         
         print(f"Generating sample data...")
         print(f"Output directory: {os.path.abspath(path)}")

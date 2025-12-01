@@ -93,7 +93,7 @@ The dev container includes:
 3. **Formatting**: Code is auto-formatted with Black on save
 4. **Security Scanning**: Use `bandit` to scan for security issues
 5. **Deployment**: Use `azd up` to deploy to Azure
-6. **Event Simulation**: Use `python infra/scripts/event_simulator.py` to generate real-time telemetry data
+6. **Event Simulation**: Use `python src/simulator/event_simulator.py` to generate real-time telemetry data
 7. **Data Ingestion**: Use `python infra/scripts/fabric/fabric_data_ingester.py` for batch data operations
 8. **Notebooks**: Use `jupyter lab` for interactive development
 

@@ -33,7 +33,7 @@ export PRODUCTS_CSV_PATH="../data/products.csv" # Path to products file
 ### 3. Run the Simulator
 
 ```bash
-cd infra/scripts
+cd src/simulator
 ```
 
 ```bash
@@ -56,8 +56,8 @@ python event_simulator.py --assets-csv /path/to/assets.csv --products-csv /path/
 |--------|-------------|---------|
 | `--interval` | Seconds between events per asset | 5.0 |
 | `--max-runtime` | Maximum runtime in seconds | Unlimited |
-| `--assets-csv` | Path to assets.csv file | ../data/assets.csv |
-| `--products-csv` | Path to products.csv file | ../data/products.csv |
+| `--assets-csv` | Path to assets.csv file | infra/data/assets.csv |
+| `--products-csv` | Path to products.csv file | infra/data/products.csv |
 
 ## Interactive Runtime Controls
 

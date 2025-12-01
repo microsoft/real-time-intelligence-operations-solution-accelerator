@@ -30,8 +30,8 @@ Usage:
 Environment Variables:
     AZURE_EVENT_HUB_NAMESPACE_HOSTNAME - Azure Event Hub namespace (e.g., myeventhub.servicebus.windows.net)
     AZURE_EVENT_HUB_NAME - Name of the Event Hub
-    ASSETS_CSV_PATH - Path to assets.csv file (default: ../data/assets.csv)
-    PRODUCTS_CSV_PATH - Path to products.csv file (default: ../data/products.csv)
+    ASSETS_CSV_PATH - Path to assets.csv file (default: infra/data/assets.csv)
+    PRODUCTS_CSV_PATH - Path to products.csv file (default: infra/data/products.csv)
     SIMULATION_INTERVAL - Seconds between events per asset (default: 5)
     MAX_RUNTIME_SECONDS - Maximum runtime in seconds (default: unlimited)
 
@@ -57,8 +57,8 @@ from pathlib import Path
 from typing import List, Dict, Optional
 
 # Import our project classes
-from event import Event
-from asset import AssetType
+from entities.event import Event
+from entities.asset import AssetType
 from event_hub_service import EventHubService
 from azd_env_loader import AZDEnvironmentLoader
 
@@ -466,8 +466,8 @@ def main():
     env_loader = AZDEnvironmentLoader(required=False, log_events=True)
     env_loader.set_env_vars()
 
-    script_dir = Path(__file__).parent
-    data_dir = (script_dir / '..' / 'data').resolve()
+    src_dir = Path(__file__).parent.parent
+    data_dir = (src_dir / '..' / 'infra' / 'data').resolve()
     
     # Get configuration from environment variables or arguments
     event_hub_namespace_fqdn = os.getenv('AZURE_EVENT_HUB_NAMESPACE_HOSTNAME')
@@ -490,9 +490,9 @@ def main():
     
     # Convert relative paths to absolute
     if not Path(assets_csv_path).is_absolute():
-        assets_csv_path = (script_dir / assets_csv_path).resolve()
+        assets_csv_path = (src_dir / assets_csv_path).resolve()
     if not Path(products_csv_path).is_absolute():
-        products_csv_path = (script_dir / products_csv_path).resolve()
+        products_csv_path = (src_dir / products_csv_path).resolve()
     
     print("🏭 Manufacturing Event Simulator")
     print("="*60)
