@@ -83,9 +83,15 @@ Quick deploy
 
 Follow these steps to deploy the solution to your own Azure subscription:
 
-| [![GitHub Codespaces](https://img.shields.io/badge/GitHub_Codespaces-Open-grey?style=flat&labelColor=black&message=Open&color=blue&logo=github)](https://codespaces.new/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Visual Studio Code Dev Containers](https://img.shields.io/badge/Visual_Studio_Code_Dev_Container-Open-gray?style=flat&labelColor=black&message=Open&color=blue)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Visual Studio Code Web](https://img.shields.io/badge/Visual_Studio_Code_Web-Open-gray?style=flat&labelColor=black&message=Open&color=blue)](https://vscode.dev/github/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Azure Cloud Shell](https://img.shields.io/badge/Azure_Cloud_Shell-Open-grey?style=flat&labelColor=black&message=Open&color=blue)](https://portal.azure.com/#cloudshell/) |
-| :---: | :---: | :---: | :---: |
-|  |  |  |  |
+
+<div align="center">
+
+ [![GitHub Codespaces](https://img.shields.io/badge/GitHub_Codespaces-Open-grey?style=flat&labelColor=black&message=Open&color=blue&logo=github)](https://codespaces.new/microsoft/real-time-intelligence-operations-solution-accelerator)
+ [![Visual Studio Code Dev Containers](https://img.shields.io/badge/Visual_Studio_Code_Dev_Container-Open-gray?style=flat&labelColor=black&message=Open&color=blue)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/real-time-intelligence-operations-solution-accelerator)
+ [![Visual Studio Code Web](https://img.shields.io/badge/Visual_Studio_Code_Web-Open-gray?style=flat&labelColor=black&message=Open&color=blue)](https://vscode.dev/github/microsoft/real-time-intelligence-operations-solution-accelerator)
+ [![Azure Cloud Shell](https://img.shields.io/badge/Azure_Cloud_Shell-Open-grey?style=flat&labelColor=black&message=Open&color=blue)](https://portal.azure.com/#cloudshell/)
+
+</div>
 
 <br/>
 
