@@ -83,7 +83,7 @@ Quick deploy
 
 Follow these steps to deploy the solution to your own Azure subscription:
 
-| [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Open in Dev Containers](https://img.shields.io/static/v1?style=for-the-badge&label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Open in Visual Studio Code Web](https://img.shields.io/static/v1?style=for-the-badge&label=Visual%20Studio%20Code%20(Web)&message=Open&color=blue&logo=visualstudiocode&logoColor=white)](https://vscode.dev/github/microsoft/real-time-intelligence-operations-solution-accelerator) |
+| [![GitHub Codespaces](https://img.shields.io/badge/GitHub_Codespaces-Open-grey?style=flat&labelColor=black&message=Open&color=blue&logo=github)](https://codespaces.new/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Visual Studio Code Dev Containers](https://img.shields.io/badge/Visual_Studio_Code_Dev_Container-Open-gray?style=flat&labelColor=black&message=Open&color=blue)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Visual Studio Code Web](https://img.shields.io/badge/Visual_Studio_Code_Web-Open-gray?style=flat&labelColor=black&message=Open&color=blue)](https://vscode.dev/github/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Azure Cloud Shell](https://img.shields.io/badge/Azure_Cloud_Shell-Open-grey?style=flat&labelColor=black&message=Open&color=blue)](https://portal.azure.com/#cloudshell/)
 |---|---|---|
 
 <br/>
@@ -127,7 +127,7 @@ Check more deployment aspects in our [deployment guide](./docs/DeploymentGuide.m
 | [**Deployment validation**](./docs/DeploymentGuide.md#deployment-results) | Once deployed, verify Azure infrastructure, Fabric workspace components, and real-time data flow |
 | [**Deployment overview**](./docs/DeploymentGuide.md#deployment-overview) | Two-phase deployment process: Azure infrastructure provisioning and Fabric workspace setup |
 | [**Advanced configuration**](./docs/DeploymentGuide.md#advanced-configuration-options) | Customize workspace names, component names, email alerts, and capacity deployment options |
-| [**Alternative deployment options**](./docs/DeploymentGuide.md#deployment-options) | Deploy locally, Azure Cloud Shell, GitHub Codespaces, or VS Code Dev Container |
+| [**Alternative deployment options**](./docs/DeploymentGuide.md#deployment-options) | Deploy locally, Azure Cloud Shell, GitHub Codespaces, VS Code Dev Container or GitHub Actions|
 | [**Limitations**](./docs/DeploymentGuide.md#known-limitations) | See identified limitations of the solution |
 | [**Cleanup**](./docs/DeploymentGuide.md#environment-cleanup) | Remove all deployed resources and clean up your environment with `azd down` |
 

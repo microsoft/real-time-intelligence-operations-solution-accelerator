@@ -5,7 +5,7 @@ metadata:
   template: real-time-intelligence-operations-solution-accelerator@1.0
 
 requiredVersions:
-  azd: ">1.20.0"
+  azd: ">1.19.0"
 
 hooks:
   postprovision:
