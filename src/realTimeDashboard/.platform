@@ -1,9 +1,9 @@
-﻿{
+{
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
     "type": "KQLDashboard",
-    "displayName": "Real-Time Intelligence for Operations Dashboard",
-    "description": "Real-Time Intelligence for Operations Dashboard"
+    "displayName": "__TOKEN_displayName_1__",
+    "description": "__TOKEN_description_1__"
   },
   "config": {
     "version": "2.0",
