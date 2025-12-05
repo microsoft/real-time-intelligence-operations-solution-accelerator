@@ -24,10 +24,11 @@ Provides detailed information about your data structure, table relationships, an
 **[Example Queries](./fabric_data_agent/example_queries.md)**  
 Training pairs that map business questions to proven KQL queries. These examples help your data agent learn optimal response patterns for common manufacturing scenarios.
 
-### Testing Files
+### Testing the Data Agent
 
-**[Test Sample Questions](./fabric_data_agent/sample_test_questions.md)**  
-A collection of sample questions you can use to test your agent's performance and evaluate response quality. Ideal for sharing with your testing team to jumpstart validation efforts.
+Once the Data Agent is set up with the above agent configuration files, you will be able to chat with the agent right away. You can also publish your data agent for others to use. Below is the user interface you can expect ([link to more sample test questions](./fabric_data_agent/sample_test_questions.md)): 
+
+![Fabric Data Agent UI](../docs/images/deployment/fabric_data_agent_ui.png)
 
 ## 💡 Customization Tips
 
