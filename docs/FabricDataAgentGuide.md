@@ -21,12 +21,17 @@ Provides description about the data source.
 **[Data Source Instructions](./fabric_data_agent/data_source_instructions.md)**  
 Provides detailed information about your data structure, table relationships, and query patterns. This helps the agent understand your data and deliver more accurate, efficient responses.
 
-**[Example Queries](./fabric_data_agent/example_queries.md)**  
-Training pairs that map business questions to proven KQL queries. These examples help your data agent learn optimal response patterns for common manufacturing scenarios.
+**Example Question and KQL Query Set**
+
+You can provide example question and corresponding KQL query code as well. In the `docs/fabric_data_agent` folder, you will find below files as starters:
+
+1. example_question_1.md and example_kql_code_1.md
+2. example_question_2.md and example_kql_code_2.md
+3. example_question_3.md and example_kql_code_3.md
 
 ### Testing the Data Agent
 
-Once the Data Agent is set up with the above agent configuration files, you will be able to chat with the agent right away. You can also publish your data agent for others to use. Below is the user interface you can expect ([link to more sample test questions](./fabric_data_agent/sample_test_questions.md)): 
+Once the Data Agent is set up with the above agent configuration files, you will be able to chat with the agent right away. You can also publish your data agent for others to use. Below is the user interface you can expect ([link to more sample test questions](./fabric_data_agent/user_sample_test_questions.md)): 
 
 ![Fabric Data Agent UI](../docs/images/deployment/fabric_data_agent_ui.png)
 
