@@ -45,7 +45,7 @@ When you open one of the emails, you will see something similar to below:
 
 ## Step 5. Demonstrate the Fabric Data Agent
 
-Please follow the [Fabric Data Agent Guide](./FabricDataAgentGuide.md) to understand how the Fabric Data Agent is created and set up. If it is not already set up, you can follow the instructions to create and configure a new Fabric Data Agent in minutes. After that, you can ask any questions you'd like the agent to answer. For starters, you can use the [sample questions and answers](./fabric_data_agent/sample_test_questions.md). 
+Please follow the [Fabric Data Agent Guide](./FabricDataAgentGuide.md) to understand how the Fabric Data Agent is created and set up. If it is not already set up, you can follow the instructions to create and configure a new Fabric Data Agent in minutes. After that, you can ask any questions you'd like the agent to answer. For starters, you can use the [sample test questions](./fabric_data_agent/user_sample_test_questions.md). 
 
 In the Fabric workspace, find the Fabric Data Agent that is already set up. You will be able to chat with the agent right away. Below is the user interface you can expect: 
 
