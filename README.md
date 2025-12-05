@@ -180,7 +180,7 @@ Use cases can be summarized as below:
   - **The solution provides multiple business functions with a simple architecture** <br/>
     The deployed solution provides real-time telemetry data monitoring, analysis, summarization, graphical reports, anomaly detection and notifications with a quick to deploy, secure, and simple architecture.
 
-  - **A Fabric Data Agent getting quick business intelligence without programming effort.** <br/>
+  - **A Fabric Data Agent getting quick business intelligence without programming effort** <br/>
     The Fabric Data Agent can be quickly configured with instructions delivered in this solution accelerator, providing quick and accurate insights from data effortlessly. No programming skills are necessary.
 
   - **Real-Time Intelligence for Operations Dashboard**<br/>
