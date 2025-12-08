@@ -1,6 +1,6 @@
 # Fabric Data Agent Guide
 
-After you have deployed your solution, you can add Azure Data Agent to get data analysis features from Fabric built-in AI capabilities. You can follow [Microsoft's Fabric Data Agent Guide](https://learn.microsoft.com/en-us/fabric/data-science/how-to-create-data-agent) to create and set up your Fabric Data Agent, and use the materials provided here to set up your agent quickly. For example, you can create a mew item, search for 'data agent', you will be presented the clickable resource to create a Fabric Data Agent. 
+After you have deployed your solution, you can add Azure Data Agent to get data analysis features from Fabric built-in AI capabilities. You can follow [Microsoft's Fabric Data Agent Guide](https://learn.microsoft.com/en-us/fabric/data-science/how-to-create-data-agent) to create and set up your Fabric Data Agent, and use the materials provided here to set up your agent quickly. For example, you can create a new item, search for 'data agent', you will be presented the clickable resource to create a Fabric Data Agent. 
 
 - Create a Fabric Data Agent with a name, for example, `RTI_Data_Agent`,
 - Add the KQL Database created in the Fabric workspace as your data source,
