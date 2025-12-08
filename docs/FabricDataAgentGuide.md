@@ -16,7 +16,7 @@ This folder contains essential configuration files for setting up your Fabric Da
 Contains the primary instructions and behavior guidelines for your Fabric Data Agent. This file establishes the agent's role, scope, and response patterns.
 
 **[Data Source Description](./fabric_data_agent/data_source_descriptions.md)**  
-Provides description about the data source. 
+Provides a description of the data source. 
 
 **[Data Source Instructions](./fabric_data_agent/data_source_instructions.md)**  
 Provides detailed information about your data structure, table relationships, and query patterns. This helps the agent understand your data and deliver more accurate, efficient responses.
