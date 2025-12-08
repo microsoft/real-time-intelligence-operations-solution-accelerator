@@ -23,7 +23,7 @@ Provides detailed information about your data structure, table relationships, an
 
 **Example Question and KQL Query Set**
 
-You can provide example question and corresponding KQL query code as well. In the `docs/fabric_data_agent` folder, you will find below files as starters:
+You can provide example questions and corresponding KQL query code as well. In the `docs/fabric_data_agent` folder, you will find the below files as starters:
 
 1. example_question_1.md and example_kql_code_1.md
 2. example_question_2.md and example_kql_code_2.md
