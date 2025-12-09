@@ -47,7 +47,7 @@ If you'd like to customize the solution accelerator, here are some common areas 
 
 [Microsoft Fabric Blog](https://blog.fabric.microsoft.com/en-us/blog)
 
-[WhatIs Real-Time Intelligence in Microsoft Fabric?](https://learn.microsoft.com/en-us/fabric/real-time-intelligence/overview)
+[What Is Real-Time Intelligence in Microsoft Fabric?](https://learn.microsoft.com/en-us/fabric/real-time-intelligence/overview)
 
 [Fabric data agent creation](https://learn.microsoft.com/en-us/fabric/data-science/concept-data-agent)
 
