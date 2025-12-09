@@ -47,7 +47,7 @@ If you'd like to customize the solution accelerator, here are some common areas 
 
 [Microsoft Fabric Blog](https://blog.fabric.microsoft.com/en-us/blog)
 
-[What Is Real-Time Intelligence in Microsoft Fabric? ](https://learn.microsoft.com/en-us/fabric/real-time-intelligence/overview)
+[WhatIs R eal-Time Intelligence in Microsoft Fabric?](https://learn.microsoft.com/en-us/fabric/real-time-intelligence/overview)
 
 [Fabric data agent creation](https://learn.microsoft.com/en-us/fabric/data-science/concept-data-agent)
 
@@ -67,7 +67,7 @@ If you'd like to customize the solution accelerator, here are some common areas 
 
   - **Anomaly Detection and Alerts through Fabric Activator** <br/>Microsoft Activator is configured with anomaly detection rules that trigger Outlook email notifications when an anomaly occurs. For more details, please refer to [Activator Guide](./docs/ActivatorGuide.md).
 
-  - **Useful Data Analysis and Performance Metrics KQL Code** <br/>Reusable KQL code is provided to get you started quickly. For details, please refer to [Data Analysis KQL Guide](./src/kql/data_analysis/data_analysis_guide.md) and [Performance Metrics KQL Queryset Guide](./src/kql/kql_queryset/kql_queryset_guide.md). 
+  - **Useful Data Analysis and Performance Metrics KQL Code** <br/>Reusable KQL code is provided to get you started quickly. For details, please refer to [Data Analysis KQL Guide](./src/kql/data_analysis/data_analysis_guide.md) and [Performance Metrics KQL Queryset Guide](./src/kql/kql_queryset/kql_queryset_guide.md).
 
   - **Demonstrator's Guide** <br/> After successful deployment of the solution accelerator, you or your colleague who has required access can demonstrate this solution by following the steps outlined in the [Demonstrator's Guide](./docs/DemonstratorGuide.md).
 
@@ -86,7 +86,7 @@ Follow these steps to deploy the solution to your own Azure subscription:
 | [![GitHub Codespaces](https://img.shields.io/badge/GitHub_Codespaces-Open-grey?style=flat&labelColor=grey&message=Open&color=blue&logo=github)](https://codespaces.new/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Visual Studio Code Dev Containers](https://img.shields.io/badge/Visual_Studio_Code_Dev_Container-Open-gray?style=flat&labelColor=grey&message=Open&color=blue)](https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Visual Studio Code Web](https://img.shields.io/badge/Visual_Studio_Code_Web-Open-gray?style=flat&labelColor=grey&message=Open&color=blue)](https://vscode.dev/github/microsoft/real-time-intelligence-operations-solution-accelerator) | [![Azure Cloud Shell](https://img.shields.io/badge/Azure_Cloud_Shell-Open-grey?style=flat&labelColor=grey&message=Open&color=blue)](https://portal.azure.com/#cloudshell/) |
 |---|---|---|---|
 
-**One-command deployment** - Deploy everything with [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) and [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (check [prerquisites](./docs/DeploymentGuide.md#prerequisites)):
+**One-command deployment** - Deploy everything with [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) and [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) (check [prerequisites](./docs/DeploymentGuide.md#step-1-prerequisites--setup)):
 
 ```bash
 # Clone and navigate to repository
