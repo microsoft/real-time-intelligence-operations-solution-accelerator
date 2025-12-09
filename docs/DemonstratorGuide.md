@@ -18,7 +18,7 @@ The Fabric Data Agent is an AI-powered assistant that provides natural language 
 **Instructions:**
 
 1. Refer to the [Fabric Data Agent Guide](./FabricDataAgentGuide.md) for detailed setup instructions
-2. After deployment (or if already deployed),locate the Data Agent in your Fabric workspace
+2. After deployment (or if already deployed), locate the Data Agent in your Fabric workspace
 3. Submit questions about the data using the [provided sample questions](./fabric_data_agent/user_sample_test_questions.md) or your own queries
 4. Observe how the agent delivers instant responses in natural language
 
