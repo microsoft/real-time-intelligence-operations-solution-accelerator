@@ -41,7 +41,7 @@ jobs:
     environment: 'rti-build'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Azure CLI
         uses: azure/login@v2
@@ -84,7 +84,7 @@ jobs:
     # if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || github.ref == 'refs/heads/pre-deploy-alguadam' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       
       - name: Azure CLI login
         uses: azure/login@v2
@@ -110,7 +110,7 @@ jobs:
                 }
 
       - name: Setup Python Environment
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
