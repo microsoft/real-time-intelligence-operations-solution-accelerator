@@ -98,6 +98,7 @@ var allTags = union(
     'azd-env-name': solutionName
     TemplateName: 'Real-time Ingestion Fabric Solution Accelerator'
     Type:'Non-WAF'
+    CreatedBy: createdBy
   },
   tags
 )
