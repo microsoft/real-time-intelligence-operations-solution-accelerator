@@ -182,7 +182,7 @@ Install the following tools on your local machine:
 
 | Tool | Version | Installation |
 |------|---------|--------------|
-| **Python** | 3.9 or later | [Download from python.org](https://www.python.org/downloads/) |
+| **Python** | 3.9 or later (**x64 build on Windows**) | [Download from python.org](https://www.python.org/downloads/) |
 | **Azure CLI** | Latest | [Install Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) |
 | **Azure Developer CLI (azd)** | Latest | [Install azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) |
 | **Bicep CLI** | 0.33.0 or later | [Install Bicep](https://learn.microsoft.com/azure/azure-resource-manager/bicep/install) |
@@ -200,6 +200,14 @@ git --version
 ```
 
 </details>
+
+> **⚠️ Windows on ARM (Snapdragon/Surface Pro X and similar):** Install the **x64** build of Python, not the ARM64 build. Several dependencies — notably `cryptography`, pulled in by `azure-identity` — no longer publish `win_arm64` wheels, so an ARM64 interpreter forces a source build that fails with `Could not find directory of OpenSSL installation`. The deployment scripts automatically prefer an x64 interpreter when one is installed. Verify with:
+>
+> ```powershell
+> python -c "import platform; print(platform.machine())"   # should print AMD64
+> ```
+>
+> If it prints `ARM64`, install the 64-bit (x64) installer from [python.org](https://www.python.org/downloads/windows/), delete the `.venv` folder, and rerun `azd up`.
 
 📖 **Detailed Setup:** For complete Azure account configuration, see [Azure Account Setup Guide](./AzureAccountSetUp.md).
 
