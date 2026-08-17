@@ -20,6 +20,9 @@
         },
         "ghcr.io/azure/azure-dev/azd:latest": {}
     },
+    "containerEnv": {
+        "PIP_INDEX_URL": "https://packagefeedproxy.microsoft.io/pypi/simple"
+    },
     "customizations": {
         "vscode": {
             "extensions": [

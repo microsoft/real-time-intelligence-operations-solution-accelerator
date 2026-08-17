@@ -7,6 +7,10 @@ set -e
 
 echo "🚀 Setting up Unified Data Foundation with Fabric development environment..."
 
+# Approved internal PyPI index (required by tenant policy; public PyPI is blocked)
+PIP_INDEX_URL="https://packagefeedproxy.microsoft.io/pypi/simple"
+export PIP_INDEX_URL
+
 # Note: Core tools already provided by devcontainer.json:
 # - Python 3.x (base image) with pip and venv
 # - Azure CLI + Bicep (azure-cli feature)
