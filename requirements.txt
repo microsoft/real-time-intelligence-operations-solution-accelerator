@@ -1,6 +1,8 @@
 # Consolidated requirements for the Real-Time Intelligence Operations Solution Accelerator
 # This file contains all Python dependencies needed for deployment scripts and project functionality
 
+--index-url https://packagefeedproxy.microsoft.io/pypi/simple/
+
 # === FABRIC DEPLOYMENT SCRIPTS (infra/scripts/fabric/) ===
 # Used by: deploy_fabric_rti.py, fabric_*.py files for Microsoft Fabric configuration deployment
 azure-identity>=1.25.1                  # Authentication for Azure services (fabric_api.py, fabric_database.py, fabric_data_ingester.py, fabric_event_hub.py)
