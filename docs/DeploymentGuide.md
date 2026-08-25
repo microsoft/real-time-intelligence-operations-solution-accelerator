@@ -9,7 +9,8 @@ Deploy the **Real-Time Intelligence for Operations Solution Accelerator** using 
 | Section | Description |
 |---------|-------------|
 | [**Overview**](#overview) | Two-phase deployment architecture explained |
-| [**Prerequisites & Setup**](#step-1-prerequisites--setup) | Azure and Fabric requirements, software installation |
+| [**Prerequisites & Setup**](#step-1-prerequisites--setup) | Azure and Fabric requirements, supported regions, software installation |
+| [**Supported Azure Regions**](#13-supported-azure-regions) | Regions that support Fabric Capacity, Event Hubs, and zone redundancy |
 | [**Deployment Environment**](#step-2-choose-your-deployment-environment) | Choose deployment method: Local, Cloud Shell, Codespaces, Dev Container, or GitHub Actions |
 | [**Configuration Settings**](#step-3-configure-deployment-settings-optional) | Optional: Customize resource names and settings |
 | [**Deploy the Solution**](#step-4-deploy-the-solution) | Execute deployment with step-by-step instructions |
@@ -102,7 +103,66 @@ Your organization must have the following setup:
 | **Workspace Creation** | Permissions to create new Fabric workspaces |
 | **REST API Access** | If using Service Principals or Managed Identities, [enable the tenant setting](https://learn.microsoft.com/rest/api/fabric/articles/identity-support) for "Service principals and managed identities support on Fabric REST API" |
 
-### 1.3 Deployment Identity
+### 1.3 Supported Azure Regions
+
+The deployment is restricted to Azure regions that support **all three** requirements of this accelerator:
+
+- **Microsoft Fabric Capacity** (`Microsoft.Fabric/capacities`)
+- **Azure Event Hubs** (`Microsoft.EventHub/namespaces`)
+- **Availability zones** — Event Hubs Standard namespaces are automatically zone redundant in these regions
+
+`azd up` only offers these regions in the location prompt, and the Bicep template rejects any other value with a clear error listing the valid options.
+
+> **💡 Recommended:** `eastus2` (East US 2). It is the template default and has the broadest service availability.
+
+> **📌 Fabric multi-geo:** Where possible, choose the region that matches your Microsoft Fabric tenant home region. Deploying the Fabric Capacity to a different region engages [Fabric multi-geo capabilities](https://learn.microsoft.com/fabric/admin/service-admin-premium-multi-geo), which may have billing and data residency implications.
+
+<details>
+<summary><b>Full list of supported regions</b></summary>
+
+| Americas | Europe | Asia Pacific | Middle East & Africa |
+|----------|--------|--------------|----------------------|
+| `brazilsouth` | `austriaeast` | `australiaeast` | `israelcentral` |
+| `canadacentral` | `francecentral` | `centralindia` | `qatarcentral` |
+| `centralus` | `germanywestcentral` | `eastasia` | `southafricanorth` |
+| `chilecentral` | `italynorth` | `indonesiacentral` | `uaenorth` |
+| `eastus` | `northeurope` | `japaneast` | |
+| `eastus2` | `norwayeast` | `japanwest` | |
+| `mexicocentral` | `polandcentral` | `koreacentral` | |
+| `southcentralus` | `spaincentral` | `malaysiawest` | |
+| `westus2` | `swedencentral` | `newzealandnorth` | |
+| `westus3` | `switzerlandnorth` | `southeastasia` | |
+| | `uksouth` | | |
+| | `westeurope` | | |
+
+Verify current availability for your subscription at any time:
+
+```bash
+# Regions where Fabric Capacity can be created
+az provider show --namespace Microsoft.Fabric \
+  --query "resourceTypes[?resourceType=='capacities'].locations | [0]" -o tsv
+
+# Regions that support availability zones
+az account list-locations \
+  --query "[?availabilityZoneMappings!=null && metadata.regionType=='Physical'].name" -o tsv
+```
+
+</details>
+
+**Setting the region:**
+
+```bash
+# Option 1: pick from the filtered list shown by the azd up prompt
+azd up
+
+# Option 2: set it explicitly before deploying
+azd env set AZURE_LOCATION eastus2
+azd up
+```
+
+> **⚠️ Changing regions after deployment:** Azure resources cannot be moved between regions. To redeploy elsewhere, run `azd down --force --purge`, then create a new environment with `azd env new <name>` and set the new location before running `azd up`.
+
+### 1.4 Deployment Identity
 
 Deployment identity determines how your deployment interacts with Azure and Microsoft Fabric resources. Choose one identity type for deployment:
 
@@ -114,7 +174,7 @@ Deployment identity determines how your deployment interacts with Azure and Micr
 
 [Learn more about Fabric Identity Support](https://learn.microsoft.com/rest/api/fabric/articles/identity-support)
 
-### 1.4 Software Requirements
+### 1.5 Software Requirements
 
 **Note:** Skip this section if using GitHub Codespaces, VS Code Dev Container, or Azure Cloud Shell—all tools are pre-installed in these environments.
 
@@ -122,7 +182,7 @@ Install the following tools on your local machine:
 
 | Tool | Version | Installation |
 |------|---------|--------------|
-| **Python** | 3.9 or later | [Download from python.org](https://www.python.org/downloads/) |
+| **Python** | 3.9 or later (**x64 build on Windows**) | [Download from python.org](https://www.python.org/downloads/) |
 | **Azure CLI** | Latest | [Install Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli) |
 | **Azure Developer CLI (azd)** | Latest | [Install azd](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) |
 | **Bicep CLI** | 0.33.0 or later | [Install Bicep](https://learn.microsoft.com/azure/azure-resource-manager/bicep/install) |
@@ -141,6 +201,14 @@ git --version
 
 </details>
 
+> **⚠️ Windows on ARM (Snapdragon/Surface Pro X and similar):** Install the **x64** build of Python, not the ARM64 build. Several dependencies — notably `cryptography`, pulled in by `azure-identity` — no longer publish `win_arm64` wheels, so an ARM64 interpreter forces a source build that fails with `Could not find directory of OpenSSL installation`. The deployment scripts automatically prefer an x64 interpreter when one is installed. Verify with:
+>
+> ```powershell
+> python -c "import platform; print(platform.machine())"   # should print AMD64
+> ```
+>
+> If it prints `ARM64`, install the 64-bit (x64) installer from [python.org](https://www.python.org/downloads/windows/), delete the `.venv` folder, and rerun `azd up`.
+
 📖 **Detailed Setup:** For complete Azure account configuration, see [Azure Account Setup Guide](./AzureAccountSetUp.md).
 
 ---
@@ -155,7 +223,7 @@ Select one of the following options to deploy the solution:
 |-------------|----------------|-------|
 | **[GitHub Codespaces](#option-a-github-codespaces)** | GitHub account | Cloud development environment |
 | **[Visual Studio Code Dev Container](#option-b-vs-code-dev-container)** | Docker Desktop + VS Code | Containerized consistency |
-| **[Local Machine](#option-c-local-machine)** | Install [software requirements](#14-software-requirements) | Most flexible, requires local setup |
+| **[Local Machine](#option-c-local-machine)** | Install [software requirements](#15-software-requirements) | Most flexible, requires local setup |
 | **[Azure Cloud Shell](#option-d-azure-cloud-shell)** | Web browser | Pre-configured tools, session timeouts |
 | **[GitHub Actions](#option-e-github-actions)** | Azure service principal | Federated identity, automated deployment |
 | **[Visual Studio Code Web](#option-f-visual-studio-code-web)** | Web browser | Pre-configured tools, session timeouts |
@@ -196,7 +264,7 @@ Select one of the following options to deploy the solution:
 
 **Full control with your local development environment.**
 
-1. Install the [software requirements](#14-software-requirements) above
+1. Install the [software requirements](#15-software-requirements) above
 2. Clone the repository:
 
    ```bash
@@ -565,7 +633,8 @@ During deployment, you'll be prompted for:
 
 1. **Environment name** (e.g., "myrtisys") - This will be used to build the name of the deployed Azure resources.
 2. **Azure subscription** - Select your target subscription
-3. **Azure resource group** - Create new or select existing group
+3. **Azure location** - Only [supported regions](#13-supported-azure-regions) are listed. Pick `East US 2` if you have no preference.
+4. **Azure resource group** - Create new or select existing group
 
 **What Happens During Deployment:**
 

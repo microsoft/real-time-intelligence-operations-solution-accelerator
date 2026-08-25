@@ -16,8 +16,46 @@ param solutionUniqueText string = substring(uniqueString(subscription().id, reso
 
 @minLength(3)
 @metadata({ azd: { type: 'location' } })
-@description('Optional. Azure region for all services. Defaults to the tenant\' location to avoid usage of Microsoft Fabric multi-geo capabilities.')
-param location string = resourceGroup().location
+@allowed([
+  'australiaeast'
+  'austriaeast'
+  'brazilsouth'
+  'canadacentral'
+  'centralindia'
+  'centralus'
+  'chilecentral'
+  'eastasia'
+  'eastus'
+  'eastus2'
+  'francecentral'
+  'germanywestcentral'
+  'indonesiacentral'
+  'israelcentral'
+  'italynorth'
+  'japaneast'
+  'japanwest'
+  'koreacentral'
+  'malaysiawest'
+  'mexicocentral'
+  'newzealandnorth'
+  'northeurope'
+  'norwayeast'
+  'polandcentral'
+  'qatarcentral'
+  'southafricanorth'
+  'southcentralus'
+  'southeastasia'
+  'spaincentral'
+  'swedencentral'
+  'switzerlandnorth'
+  'uaenorth'
+  'uksouth'
+  'westeurope'
+  'westus2'
+  'westus3'
+])
+@description('Optional. Azure region for all services. Only regions that support Microsoft Fabric Capacity, Azure Event Hubs, and availability zones (zone redundancy) are allowed. Defaults to East US 2. When deploying with `azd`, this is set from the location you select at the `azd up` prompt.')
+param location string = 'eastus2'
 
 @description('Optional. Enable/Disable usage telemetry for module.')
 param enableTelemetry bool = true
