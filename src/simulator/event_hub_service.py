@@ -11,7 +11,9 @@ except ImportError as e:
         "❌ Error: azure-eventhub and azure-identity packages are "
         "required.\n"
         "Install them using: "
-        "pip install azure-eventhub azure-identity"
+        "pip install --index-url "
+        "https://packagefeedproxy.microsoft.io/pypi/simple/ "
+        "azure-eventhub azure-identity"
     ) from e
 
 

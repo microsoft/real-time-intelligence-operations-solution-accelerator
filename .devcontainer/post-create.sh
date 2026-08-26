@@ -31,7 +31,7 @@ python3 -m pip --version
 
 # Upgrade pip
 echo "🐍 Upgrading pip..."
-python3 -m pip install --upgrade pip
+python3 -m pip install --index-url https://packagefeedproxy.microsoft.io/pypi/simple/ --upgrade pip
 
 # Install Python requirements for the project
 echo "📋 Installing Python dependencies globally..."
@@ -40,7 +40,7 @@ echo "📋 Installing Python dependencies globally..."
 # This improves deployment script performance by avoiding repeated installations
 if [ -f "./requirements.txt" ]; then
     echo "📦 Installing project requirements globally..."
-    python3 -m pip install -r "./requirements.txt"
+    python3 -m pip install --index-url https://packagefeedproxy.microsoft.io/pypi/simple/ -r "./requirements.txt"
     echo "✅ Project requirements installed successfully"
 else
     echo "⚠️ Warning: ./requirements.txt not found"
@@ -48,7 +48,7 @@ fi
 
 # Install additional development tools
 echo "🛠️ Installing development tools..."
-if ! python3 -m pip install \
+if ! python3 -m pip install --index-url https://packagefeedproxy.microsoft.io/pypi/simple/ \
     black \
     flake8 \
     pytest \

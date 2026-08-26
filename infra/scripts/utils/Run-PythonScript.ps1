@@ -62,6 +62,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+$PIP_INDEX_URL = "https://packagefeedproxy.microsoft.io/pypi/simple/"
 
 # Helper functions for colored output
 function Write-Info { param([string]$Message) Write-Host $Message -ForegroundColor Cyan }
@@ -130,7 +131,7 @@ function Initialize-PythonEnvironment {
     # Upgrade pip if not skipped
     if (-not $SkipPipUpgrade) {
         Write-Warning "Upgrading pip..."
-        & $pythonExec -m pip install --upgrade pip --quiet
+        & $pythonExec -m pip install --index-url "$PIP_INDEX_URL" --upgrade pip --quiet
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Warning: Failed to upgrade pip, continuing with existing version..."
         }
@@ -145,7 +146,7 @@ function Initialize-PythonEnvironment {
         if (-not (Test-Path $RequirementsPath)) {
             throw "requirements.txt not found at: $RequirementsPath"
         }
-        & $pythonExec -m pip install -r "$RequirementsPath" --quiet
+        & $pythonExec -m pip install --index-url "$PIP_INDEX_URL" -r "$RequirementsPath" --quiet
         if ($LASTEXITCODE -ne 0) { throw "Failed to install Python dependencies." }
     }
     else {

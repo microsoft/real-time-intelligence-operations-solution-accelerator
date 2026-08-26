@@ -12,7 +12,7 @@ Core Features:
 - HTTP request handling with error management
 
 Dependencies:
-    pip install requests azure-identity
+    pip install --index-url https://packagefeedproxy.microsoft.io/pypi/simple/ requests azure-identity
 
 Author: Generated for Real-Time Intelligence Operations Solution Accelerator
 """
