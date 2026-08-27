@@ -20,10 +20,10 @@ Requirements:
     - Azure CLI authentication or other Azure credentials configured
     - Contributor permissions in the target workspace
     - Event Hub Contributor role for automatic key retrieval
-    - azure-mgmt-eventhub package: pip install azure-mgmt-eventhub
+    - azure-mgmt-eventhub package: python -m pip install --index-url https://packagefeedproxy.microsoft.io/pypi/simple/ azure-mgmt-eventhub
 
 Environment Setup:
-    pip install azure-mgmt-eventhub azure-identity
+    python -m pip install --index-url https://packagefeedproxy.microsoft.io/pypi/simple/ azure-mgmt-eventhub azure-identity
 """
 
 import argparse
