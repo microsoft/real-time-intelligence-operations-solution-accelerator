@@ -16,7 +16,7 @@ Core Features:
 - OneLake file system client integration
 
 Dependencies:
-    pip install requests azure-identity
+    python -m pip install --index-url https://packagefeedproxy.microsoft.io/pypi/simple/ requests azure-identity
 
 Author: Generated for Unified Data Foundation with Fabric (UDFWF) project
 """
