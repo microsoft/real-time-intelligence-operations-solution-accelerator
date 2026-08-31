@@ -25,7 +25,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Build and Static Analysis
-    environment: 'rti-build'
+    environment: 'production'
     outputs:
       RESOURCE_GROUP_NAME: ${{ steps.check_create_rg.outputs.RESOURCE_GROUP_NAME }}
       ENV_NAME: ${{ steps.generate_env_name.outputs.ENV_NAME }}
@@ -111,7 +111,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     name: Deploy
-    environment: 'rti-dev'
+    environment: 'production'
     needs: build
     outputs:
       SOLUTION_SUFFIX: ${{ steps.azd_params.outputs.SOLUTION_SUFFIX }}
@@ -243,7 +243,7 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     name: Cleanup Resources
-    environment: 'rti-dev'
+    environment: 'production'
     needs: [build, deploy]
     if: always() && needs.build.outputs.RESOURCE_GROUP_NAME != '' && needs.build.outputs.ENV_NAME != ''
     env:
